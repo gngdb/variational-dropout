@@ -1,0 +1,7 @@
+PyYAML==3.11
+Pygments==2.0.2
+mock==1.0.1
+numpy==1.9.2
+scipy==0.15.1
+six==1.9.0
+pip==6.1.1
