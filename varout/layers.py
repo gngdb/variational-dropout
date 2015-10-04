@@ -113,7 +113,9 @@ class SrivastavaGaussianDropout(lasagne.layers.Layer):
                 )
         # if we get no nonlinearity, just put a non-function there
         if nonlinearity == None:
-            nonlinearity = lambda x: x
+            self.nonlinearity = lambda x: x
+        else:
+            self.nonlinearity = nonlinearity
 
     def get_output_for(self, input, deterministic=False, **kwargs):
         """
@@ -127,4 +129,5 @@ class SrivastavaGaussianDropout(lasagne.layers.Layer):
         if deterministic or self.sigma.get_value() == 0:
             return input
         else:
-            return input*_srng.normal(input.shape, avg=1.0, std=1.)*self.sigma
+            return self.nonlinearity(
+                input*_srng.normal(input.shape, avg=1.0, std=1.)*self.sigma)
