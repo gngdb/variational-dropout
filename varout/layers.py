@@ -3,6 +3,9 @@
 import lasagne.layers
 import theano.tensor as T
 
+from theano.sandbox.rng_mrg import MRG_RandomStreams
+_srng = MRG_RandomStreams(42)
+
 class VariationalDropout(lasagne.layers.Layer):
     """
     Base class for variational dropout layers, because the noise sampling
@@ -18,12 +21,52 @@ class VariationalDropout(lasagne.layers.Layer):
             * "weightwise" - allow updates to a parameter for each weight (don't 
             think this is actually necessary to replicate)
     """
-    def __init__(self, input_layer, p=0.5, adaptive=None):
+    def __init__(self, incoming, p=0.5, adaptive=None):
+        super(VariationalDropout, self).__init__(incoming, **kwargs)
+        self.adaptive = adaptive
+        # init based on adaptive options:
+        if self.adaptive == None:
+            # initialise scalar param, disallow updates through _get_params
+            self.alpha = theano.shared(
+                value=np.array(np.sqrt(p/(1.-p))).astype(theano.config.floatX),
+                name='alpha'
+                )           
+        elif self.adaptive == "layerwise":
+            # initialise scalar param, allow updates
+            self.alpha = theano.shared(
+                value=np.array(np.sqrt(p/(1.-p))).astype(theano.config.floatX),
+                name='alpha'
+                )           
+        elif self.adaptive == "elementwise":
+            # initialise param for each activation passed
+            self.alpha = theano.shared(
+                value=np.array(
+                    np.ones(self.input_shape[1])*np.sqrt(p/(1.-p))
+                    ).astype(theano.config.floatX),
+                name='alpha'
+                )           
+        elif self.adaptive == "weightwise":
+            # not implemented yet
+            raise NotImplementedError("Not implemented yet, will have to "
+                    "use DenseLayer inheritance.")
 
-
+    def _get_params(self):
+        """
+        returns parameters, if allowed
+        """
+        if self.adaptive != None:
+            return self.alpha
 
     def _sample_noise(self):
-        
+        """
+        sample a noise matrix using the current alpha: N(1,alpha) 
+        aka N(vector of ones, diag(alpha))
+        """
+        noise = _srng.normal(self.input_shape, avg=0.0, std=1.0)
+        # vectors will multiply row-wise, and scalar will distribute
+        # (check it out, the reparameterization trick:)
+        noise = 1.0+self.alpha*noise
+        return noise
 
 class VariationalDropoutA(VariationalDropout):
     """
@@ -35,7 +78,6 @@ class VariationalDropoutA(VariationalDropout):
     distribution.
         * 
     """
-
     def get_output_for(self, input, deterministic=False, *args, **kwargs):
 
 class VariationalDropoutB(VariationalDropout):
@@ -47,7 +89,8 @@ class VariationalDropoutB(VariationalDropout):
     """
     def get_output_for(self, input, deterministic=False, *args, **kwargs):
 
-class GaussianDropout(lasagne.layers.Layer):
+
+class SrivastavaGaussianDropout(lasagne.layers.Layer):
     """
     Replication of the Gaussian dropout of Srivastava et al. 2014 (section
     10). To use this right, similarly to the above, this has to be applied
