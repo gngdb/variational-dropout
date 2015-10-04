@@ -71,24 +71,22 @@ class VariationalDropout(lasagne.layers.Layer):
 class VariationalDropoutA(VariationalDropout):
     """
     Variational dropout layer, implementing correlated weight noise over the 
-    output of a layer. Noise in this case is applied to the activations of 
-    the previous layer.
+    output of a layer. 
+
     Inits:
         * p - initialisation of the parameters sampled for the noise 
     distribution.
         * 
     """
     def get_output_for(self, input, deterministic=False, *args, **kwargs):
-
+        pass
 
 class VariationalDropoutB(VariationalDropout):
     """
-    Variational dropout layer, implementing independent weight noise, which
-    means applying noise to the activations. This should be used after a 
-    Lasagne layer _without_ a nonlinearity. You can specify a nonlinearity for
-    this layer to apply after the noising process.
+    Variational dropout layer, implementing independent weight noise.
     """
     def get_output_for(self, input, deterministic=False, *args, **kwargs):
+        pass
 
 
 class SrivastavaGaussianDropout(lasagne.layers.Layer):
