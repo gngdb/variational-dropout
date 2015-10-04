@@ -107,7 +107,7 @@ class SrivastavaGaussianDropout(lasagne.layers.Layer):
     nonlinearity : a nonlinearity to apply after the noising process
     """
     def __init__(self, incoming, p=0.5, nonlinearity=None, **kwargs):
-        super(GaussianDropout, self).__init__(incoming, **kwargs)
+        super(SrivastavaGaussianDropout, self).__init__(incoming, **kwargs)
         self.sigma = theano.shared(
                 value=np.array(np.sqrt(p/(1.-p))).astype(theano.config.floatX),
                 name='alpha'
@@ -150,7 +150,7 @@ class WangGaussianDropout(lasagne.layers.Layer):
     nonlinearity : a nonlinearity to apply after the noising process
     """
     def __init__(self, incoming, p=0.5, nonlinearity=None, **kwargs):
-        super(GaussianDropout, self).__init__(incoming, **kwargs)
+        super(WangGaussianDropout, self).__init__(incoming, **kwargs)
         self.p = theano.shared(
                 value=np.array(p).astype(theano.config.floatX),
                 name='alpha'
