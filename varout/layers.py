@@ -50,7 +50,7 @@ class VariationalDropout(lasagne.layers.Layer):
             raise NotImplementedError("Not implemented yet, will have to "
                     "use DenseLayer inheritance.")
 
-    def _get_params(self):
+    def get_params(self):
         """
         returns parameters, if allowed
         """
@@ -79,6 +79,7 @@ class VariationalDropoutA(VariationalDropout):
         * 
     """
     def get_output_for(self, input, deterministic=False, *args, **kwargs):
+
 
 class VariationalDropoutB(VariationalDropout):
     """
