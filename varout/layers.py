@@ -104,6 +104,7 @@ class SrivastavaGaussianDropout(lasagne.layers.Layer):
     incoming : a :class:`Layer` instance or a tuple
         the layer feeding into this layer, or the expected input shape
     p : float or tensor scalar, effective dropout probability
+    nonlinearity : a nonlinearity to apply after the noising process
     """
     def __init__(self, incoming, p=0.5, nonlinearity=None, **kwargs):
         super(GaussianDropout, self).__init__(incoming, **kwargs)
@@ -131,3 +132,49 @@ class SrivastavaGaussianDropout(lasagne.layers.Layer):
         else:
             return self.nonlinearity(
                 input*_srng.normal(input.shape, avg=1.0, std=1.)*self.sigma)
+
+class WangGaussianDropout(lasagne.layers.Layer):
+    """
+    Replication of the Gaussian dropout of Wang and Manning 2012.
+    To use this right, similarly to the above, this has to be applied
+    to the activations of the network _before the nonlinearity_. This means
+    that the prior layer must have _no nonlinearity_, and then you can 
+    either apply a nonlinearity in this layer or afterwards yourself.
+
+    Uses some of the code and comments from the Lasagne GaussianNoiseLayer:
+    Parameters
+    ----------
+    incoming : a :class:`Layer` instance or a tuple
+        the layer feeding into this layer, or the expected input shape
+    p : float or tensor scalar, effective dropout probability
+    nonlinearity : a nonlinearity to apply after the noising process
+    """
+    def __init__(self, incoming, p=0.5, nonlinearity=None, **kwargs):
+        super(GaussianDropout, self).__init__(incoming, **kwargs)
+        self.p = theano.shared(
+                value=np.array(p).astype(theano.config.floatX),
+                name='alpha'
+                )
+        # if we get no nonlinearity, just put a non-function there
+        if nonlinearity == None:
+            self.nonlinearity = lambda x: x
+        else:
+            self.nonlinearity = nonlinearity
+
+    def get_output_for(self, input, deterministic=False, **kwargs):
+        """
+        Parameters
+        ----------
+        input : tensor
+        output from the previous layer
+        deterministic : bool
+        If true noise is disabled, see notes
+        """
+        if deterministic or self.sigma.get_value() == 0:
+            return input
+        else:
+            # sample from the Gaussian that dropout would produce:
+            mu_z = self.p*input
+            sigma_z = T.sqrt(self.p*(1.-self.p)*T.pow(input,2))
+            randn = _srng.normal(input.shape, avg=1.0, std=1.)
+            return self.nonlinearity(mu_z + sigma_z*randn)
