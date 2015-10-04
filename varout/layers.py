@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import lasagne.layers
+import theano
 import theano.tensor as T
+import numpy as np
 
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 _srng = MRG_RandomStreams(42)
@@ -79,14 +81,14 @@ class VariationalDropoutA(VariationalDropout):
         * 
     """
     def get_output_for(self, input, deterministic=False, *args, **kwargs):
-        pass
+        return None
 
 class VariationalDropoutB(VariationalDropout):
     """
     Variational dropout layer, implementing independent weight noise.
     """
     def get_output_for(self, input, deterministic=False, *args, **kwargs):
-        pass
+        return None
 
 
 class SrivastavaGaussianDropout(lasagne.layers.Layer):
@@ -127,10 +129,10 @@ class SrivastavaGaussianDropout(lasagne.layers.Layer):
         If true noise is disabled, see notes
         """
         if deterministic or self.sigma.get_value() == 0:
-            return input
+            return self.nonlinearity(input)
         else:
-            return self.nonlinearity(
-                input*_srng.normal(input.shape, avg=1.0, std=1.)*self.sigma)
+            return self.nonlinearity(input +
+                input*_srng.normal(input.shape, avg=0.0, std=1.)*self.sigma)
 
 class WangGaussianDropout(lasagne.layers.Layer):
     """
@@ -150,8 +152,10 @@ class WangGaussianDropout(lasagne.layers.Layer):
     """
     def __init__(self, incoming, p=0.5, nonlinearity=None, **kwargs):
         super(WangGaussianDropout, self).__init__(incoming, **kwargs)
+        # interpretation is inclusion probabilities so we have to reverse the 
+        # Lasagne convention
         self.p = theano.shared(
-                value=np.array(p).astype(theano.config.floatX),
+                value=np.array(1.-p).astype(theano.config.floatX),
                 name='alpha'
                 )
         # if we get no nonlinearity, just put a non-function there
@@ -169,8 +173,8 @@ class WangGaussianDropout(lasagne.layers.Layer):
         deterministic : bool
         If true noise is disabled, see notes
         """
-        if deterministic or self.sigma.get_value() == 0:
-            return input
+        if deterministic or self.p.get_value() == 0:
+            return self.nonlinearity(input)
         else:
             # sample from the Gaussian that dropout would produce:
             mu_z = self.p*input
