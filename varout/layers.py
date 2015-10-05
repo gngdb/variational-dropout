@@ -102,7 +102,10 @@ class WangGaussianDropout(lasagne.layers.Layer):
         else:
             # sample from the Gaussian that dropout would produce:
             mu_z = input
-            sigma_z = T.sqrt(self.alpha*T.pow(input,2))
+            # have to disconnect alpha as we're want the parameter loss to be 
+            # independent
+            dalpha = theano.gradient.disconnected_grad(self.alpha)
+            sigma_z = T.sqrt(dalpha*T.pow(input,2))
             randn = _srng.normal(input.shape, avg=1.0, std=1.)
             return self.nonlinearity(mu_z + sigma_z*randn)
 
@@ -139,8 +142,10 @@ class SrivastavaGaussianDropout(lasagne.layers.Layer):
         if deterministic or self.alpha.get_value() == 0:
             return input
         else:
+            # SGVB loss must be independent of alpha
+            dalpha = theano.gradient.disconnected_grad(self.alpha)
             return input + \
-                input*self.alpha*_srng.normal(input.shape, avg=0.0, std=1.)
+                input*dalpha*_srng.normal(input.shape, avg=0.0, std=1.)
 
 class VariationalDropoutA(VariationalDropout, SrivastavaGaussianDropout):
     """
