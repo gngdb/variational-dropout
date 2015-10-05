@@ -23,8 +23,9 @@ class VariationalDropout(lasagne.layers.Layer):
             * "weightwise" - allow updates to a parameter for each weight (don't 
             think this is actually necessary to replicate)
     """
-    def __init__(self, incoming, p=0.5, adaptive=None):
-        super(VariationalDropout, self).__init__(incoming, **kwargs)
+    def __init__(self, incoming, p=0.5, adaptive=None, nonlinearity=None, 
+                 **kwargs):
+        lasagne.layers.Layer.__init__(self, incoming, **kwargs)
         self.adaptive = adaptive
         # init based on adaptive options:
         if self.adaptive == None:
@@ -57,48 +58,58 @@ class VariationalDropout(lasagne.layers.Layer):
         else:
             self.nonlinearity = nonlinearity
 
-    def get_params(self):
+    def get_vd_params(self):
         """
         returns parameters, if allowed
         """
         if self.adaptive != None:
             return self.alpha
 
-class VariationalDropoutA(VariationalDropout, SrivastavaGaussianDropout):
+class WangGaussianDropout(lasagne.layers.Layer):
     """
-    Variational dropout layer, implementing correlated weight noise over the 
-    output of a layer. Adaptive version of Srivastava's Gaussian dropout.
+    Replication of the Gaussian dropout of Wang and Manning 2012.
+    To use this right, similarly to the above, this has to be applied
+    to the activations of the network _before the nonlinearity_. This means
+    that the prior layer must have _no nonlinearity_, and then you can 
+    either apply a nonlinearity in this layer or afterwards yourself.
 
-    Inits:
-        * p - initialisation of the parameters sampled for the noise 
-    distribution.
-        * adaptive - one of:
-            * None - will not allow updates to the dropout rate
-            * "layerwise" - allow updates to a single parameter controlling the 
-            updates
-            * "elementwise" - allow updates to a parameter for each hidden layer
-            * "weightwise" - allow updates to a parameter for each weight (don't 
-            think this is actually necessary to replicate)
+    Uses some of the code and comments from the Lasagne GaussianNoiseLayer:
+    Parameters
+    ----------
+    incoming : a :class:`Layer` instance or a tuple
+        the layer feeding into this layer, or the expected input shape
+    p : float or tensor scalar, effective dropout probability
+    nonlinearity : a nonlinearity to apply after the noising process
     """
-    pass
+    def __init__(self, incoming, p=0.5, nonlinearity=None, **kwargs):
+        lasagne.layers.Layer.__init__(self, incoming, **kwargs)
+        self.alpha = theano.shared(
+                value=np.array(np.sqrt(p/(1.-p))).astype(theano.config.floatX),
+                name='alpha'
+                )
+        # if we get no nonlinearity, just put a non-function there
+        if nonlinearity == None:
+            self.nonlinearity = lambda x: x
+        else:
+            self.nonlinearity = nonlinearity
 
-class VariationalDropoutB(VariationalDropout, WangGaussianDropout):
-    """
-    Variational dropout layer, implementing independent weight noise. Adaptive
-    version of Wang's Gaussian dropout.
-
-    Inits:
-        * p - initialisation of the parameters sampled for the noise 
-    distribution.
-        * adaptive - one of:
-            * None - will not allow updates to the dropout rate
-            * "layerwise" - allow updates to a single parameter controlling the 
-            updates
-            * "elementwise" - allow updates to a parameter for each hidden layer
-            * "weightwise" - allow updates to a parameter for each weight (don't 
-            think this is actually necessary to replicate)
-    """
-    pass
+    def get_output_for(self, input, deterministic=False, **kwargs):
+        """
+        Parameters
+        ----------
+        input : tensor
+        output from the previous layer
+        deterministic : bool
+        If true noise is disabled, see notes
+        """
+        if deterministic or self.alpha.get_value() == 0:
+            return self.nonlinearity(input)
+        else:
+            # sample from the Gaussian that dropout would produce:
+            mu_z = input
+            sigma_z = T.sqrt(self.alpha*T.pow(input,2))
+            randn = _srng.normal(input.shape, avg=1.0, std=1.)
+            return self.nonlinearity(mu_z + sigma_z*randn)
 
 class SrivastavaGaussianDropout(lasagne.layers.Layer):
     """
@@ -136,48 +147,45 @@ class SrivastavaGaussianDropout(lasagne.layers.Layer):
             return input + \
                 input*self.alpha*_srng.normal(input.shape, avg=0.0, std=1.)
 
-class WangGaussianDropout(lasagne.layers.Layer):
+class VariationalDropoutA(VariationalDropout, SrivastavaGaussianDropout):
     """
-    Replication of the Gaussian dropout of Wang and Manning 2012.
-    To use this right, similarly to the above, this has to be applied
-    to the activations of the network _before the nonlinearity_. This means
-    that the prior layer must have _no nonlinearity_, and then you can 
-    either apply a nonlinearity in this layer or afterwards yourself.
+    Variational dropout layer, implementing correlated weight noise over the 
+    output of a layer. Adaptive version of Srivastava's Gaussian dropout.
 
-    Uses some of the code and comments from the Lasagne GaussianNoiseLayer:
-    Parameters
-    ----------
-    incoming : a :class:`Layer` instance or a tuple
-        the layer feeding into this layer, or the expected input shape
-    p : float or tensor scalar, effective dropout probability
-    nonlinearity : a nonlinearity to apply after the noising process
+    Inits:
+        * p - initialisation of the parameters sampled for the noise 
+    distribution.
+        * adaptive - one of:
+            * None - will not allow updates to the dropout rate
+            * "layerwise" - allow updates to a single parameter controlling the 
+            updates
+            * "elementwise" - allow updates to a parameter for each hidden layer
+            * "weightwise" - allow updates to a parameter for each weight (don't 
+            think this is actually necessary to replicate)
     """
-    def __init__(self, incoming, p=0.5, nonlinearity=None, **kwargs):
-        super(WangGaussianDropout, self).__init__(incoming, **kwargs)
-        self.alpha = theano.shared(
-                value=np.array(np.sqrt(p/(1.-p))).astype(theano.config.floatX),
-                name='alpha'
-                )
-        # if we get no nonlinearity, just put a non-function there
-        if nonlinearity == None:
-            self.nonlinearity = lambda x: x
-        else:
-            self.nonlinearity = nonlinearity
+    def __init__(self, incoming, p=0.5, adaptive=None, nonlinearity=None, 
+                 **kwargs):
+        VariationalDropout.__init__(self, incoming, p=p, adaptive=adaptive, 
+                nonlinearity=nonlinearity, **kwargs)
 
-    def get_output_for(self, input, deterministic=False, **kwargs):
-        """
-        Parameters
-        ----------
-        input : tensor
-        output from the previous layer
-        deterministic : bool
-        If true noise is disabled, see notes
-        """
-        if deterministic or self.alpha.get_value() == 0:
-            return self.nonlinearity(input)
-        else:
-            # sample from the Gaussian that dropout would produce:
-            mu_z = input
-            sigma_z = T.sqrt(self.alpha*T.pow(input,2))
-            randn = _srng.normal(input.shape, avg=1.0, std=1.)
-            return self.nonlinearity(mu_z + sigma_z*randn)
+class VariationalDropoutB(VariationalDropout, WangGaussianDropout):
+    """
+    Variational dropout layer, implementing independent weight noise. Adaptive
+    version of Wang's Gaussian dropout.
+
+    Inits:
+        * p - initialisation of the parameters sampled for the noise 
+    distribution.
+        * adaptive - one of:
+            * None - will not allow updates to the dropout rate
+            * "layerwise" - allow updates to a single parameter controlling the 
+            updates
+            * "elementwise" - allow updates to a parameter for each hidden layer
+            * "weightwise" - allow updates to a parameter for each weight (don't 
+            think this is actually necessary to replicate)
+    """
+    def __init__(self, incoming, p=0.5, adaptive=None, nonlinearity=None, 
+                 **kwargs):
+        VariationalDropout.__init__(self, incoming, p=p, adaptive=adaptive, 
+                nonlinearity=nonlinearity, **kwargs)
+
