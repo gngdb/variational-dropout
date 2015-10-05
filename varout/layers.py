@@ -51,6 +51,11 @@ class VariationalDropout(lasagne.layers.Layer):
             # not implemented yet
             raise NotImplementedError("Not implemented yet, will have to "
                     "use DenseLayer inheritance.")
+        # if we get no nonlinearity, just put a non-function there
+        if nonlinearity == None:
+            self.nonlinearity = lambda x: x
+        else:
+            self.nonlinearity = nonlinearity
 
     def get_params(self):
         """
@@ -168,7 +173,7 @@ class WangGaussianDropout(lasagne.layers.Layer):
         deterministic : bool
         If true noise is disabled, see notes
         """
-        if deterministic or self.p.get_value() == 0:
+        if deterministic or self.alpha.get_value() == 0:
             return self.nonlinearity(input)
         else:
             # sample from the Gaussian that dropout would produce:
