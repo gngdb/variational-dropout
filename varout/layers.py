@@ -70,26 +70,41 @@ class VariationalDropout(lasagne.layers.Layer):
         noise = 1.0+self.alpha*noise
         return noise
 
-class VariationalDropoutA(VariationalDropout):
+class VariationalDropoutA(VariationalDropout, SrivastavaGaussianDropout):
     """
     Variational dropout layer, implementing correlated weight noise over the 
-    output of a layer. 
+    output of a layer. Adaptive version of Srivastava's Gaussian dropout.
 
     Inits:
         * p - initialisation of the parameters sampled for the noise 
     distribution.
-        * 
+        * adaptive - one of:
+            * None - will not allow updates to the dropout rate
+            * "layerwise" - allow updates to a single parameter controlling the 
+            updates
+            * "elementwise" - allow updates to a parameter for each hidden layer
+            * "weightwise" - allow updates to a parameter for each weight (don't 
+            think this is actually necessary to replicate)
     """
-    def get_output_for(self, input, deterministic=False, *args, **kwargs):
-        return None
+    pass
 
-class VariationalDropoutB(VariationalDropout):
+class VariationalDropoutB(VariationalDropout, WangGaussianDropout):
     """
-    Variational dropout layer, implementing independent weight noise.
-    """
-    def get_output_for(self, input, deterministic=False, *args, **kwargs):
-        return None
+    Variational dropout layer, implementing independent weight noise. Adaptive
+    version of Wang's Gaussian dropout.
 
+    Inits:
+        * p - initialisation of the parameters sampled for the noise 
+    distribution.
+        * adaptive - one of:
+            * None - will not allow updates to the dropout rate
+            * "layerwise" - allow updates to a single parameter controlling the 
+            updates
+            * "elementwise" - allow updates to a parameter for each hidden layer
+            * "weightwise" - allow updates to a parameter for each weight (don't 
+            think this is actually necessary to replicate)
+    """
+    pass
 
 class SrivastavaGaussianDropout(lasagne.layers.Layer):
     """
@@ -107,8 +122,7 @@ class SrivastavaGaussianDropout(lasagne.layers.Layer):
     """
     def __init__(self, incoming, p=0.5, **kwargs):
         super(SrivastavaGaussianDropout, self).__init__(incoming, **kwargs)
-        # sigma is called alpha in the paper
-        self.sigma = theano.shared(
+        self.alpha = theano.shared(
                 value=np.array(np.sqrt(p/(1.-p))).astype(theano.config.floatX),
                 name='alpha'
                 )
@@ -122,11 +136,11 @@ class SrivastavaGaussianDropout(lasagne.layers.Layer):
         deterministic : bool
         If true noise is disabled, see notes
         """
-        if deterministic or self.sigma.get_value() == 0:
+        if deterministic or self.alpha.get_value() == 0:
             return input
         else:
             return input + \
-                input*_srng.normal(input.shape, avg=0.0, std=1.)*self.sigma
+                input*self.alpha*_srng.normal(input.shape, avg=0.0, std=1.)
 
 class WangGaussianDropout(lasagne.layers.Layer):
     """
@@ -146,10 +160,8 @@ class WangGaussianDropout(lasagne.layers.Layer):
     """
     def __init__(self, incoming, p=0.5, nonlinearity=None, **kwargs):
         super(WangGaussianDropout, self).__init__(incoming, **kwargs)
-        # interpretation is inclusion probabilities so we have to reverse the 
-        # Lasagne convention
         self.alpha = theano.shared(
-                value=np.array(1.-p).astype(theano.config.floatX),
+                value=np.array(np.sqrt(p/(1.-p))).astype(theano.config.floatX),
                 name='alpha'
                 )
         # if we get no nonlinearity, just put a non-function there
@@ -172,6 +184,6 @@ class WangGaussianDropout(lasagne.layers.Layer):
         else:
             # sample from the Gaussian that dropout would produce:
             mu_z = input
-            sigma_z = T.sqrt((self.alpha/(1.-self.alpha))*T.pow(input,2))
+            sigma_z = T.sqrt(self.alpha*T.pow(input,2))
             randn = _srng.normal(input.shape, avg=1.0, std=1.)
             return self.nonlinearity(mu_z + sigma_z*randn)
