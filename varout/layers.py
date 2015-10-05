@@ -59,17 +59,6 @@ class VariationalDropout(lasagne.layers.Layer):
         if self.adaptive != None:
             return self.alpha
 
-    def _sample_noise(self):
-        """
-        sample a noise matrix using the current alpha: N(1,alpha) 
-        aka N(vector of ones, diag(alpha))
-        """
-        noise = _srng.normal(self.input_shape, avg=0.0, std=1.0)
-        # vectors will multiply row-wise, and scalar will distribute
-        # (check it out, the reparameterization trick:)
-        noise = 1.0+self.alpha*noise
-        return noise
-
 class VariationalDropoutA(VariationalDropout, SrivastavaGaussianDropout):
     """
     Variational dropout layer, implementing correlated weight noise over the 
