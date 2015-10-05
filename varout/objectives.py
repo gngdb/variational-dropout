@@ -31,6 +31,6 @@ def priorKL(output_layer):
     return sum([0.5*T.log(alpha) + c1*alpha + c2*T.pow(alpha,2) 
                                  + c3*T.pow(alpha,3) for alpha in alphas])
 
-def mclog_likelihood(predictions, targets, N=None, 
+def mclog_likelihood(N=None, 
         base_likelihood=lasagne.objectives.categorical_crossentropy):
     return lambda predictions, targets: N*base_likelihood(predictions, targets)
