@@ -20,7 +20,7 @@ def priorKL(output_layer):
     vardroplayers = [l for l in layers if isinstance(l, VariationalDropout)]
 
     # gather up all the alphas
-    alphas = [l.get_params() for l in vardroplayers]
+    alphas = [l.get__vd_params() for l in vardroplayers]
 
     # I hope all these decimal places are important
     c1 = 1.161451241083230
@@ -30,3 +30,7 @@ def priorKL(output_layer):
     # will get taken apart again in the autodiff
     return sum(0.5*T.log(alphas) + c1*alphas + c2*T.pow(alphas,2) 
                                              + c3*T.pow(alphas,3))
+
+def mclog_likelihood(predictions, targets, N=None, 
+        base_likelihood=lasagne.objectives.categorical_crossentropy):
+    return lambda predictions, targets: N*base_likelihood(predictions, targets)
