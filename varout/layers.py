@@ -29,7 +29,7 @@ class VariationalDropout(lasagne.layers.Layer):
         self.adaptive = adaptive
         # init based on adaptive options:
         if self.adaptive == None:
-            # initialise scalar param, disallow updates through _get_params
+            # initialise scalar param, but don't register it
             self.alpha = theano.shared(
                 value=np.array(np.sqrt(p/(1.-p))).astype(theano.config.floatX),
                 name='alpha'
@@ -39,7 +39,8 @@ class VariationalDropout(lasagne.layers.Layer):
             self.alpha = theano.shared(
                 value=np.array(np.sqrt(p/(1.-p))).astype(theano.config.floatX),
                 name='alpha'
-                )           
+                )
+            self.add_param(self.alpha, ())
         elif self.adaptive == "elementwise":
             # initialise param for each activation passed
             self.alpha = theano.shared(
@@ -48,6 +49,7 @@ class VariationalDropout(lasagne.layers.Layer):
                     ).astype(theano.config.floatX),
                 name='alpha'
                 )           
+            self.add_param(self.alpha, (self.input_shape[1]))
         elif self.adaptive == "weightwise":
             # not implemented yet
             raise NotImplementedError("Not implemented yet, will have to "
@@ -57,13 +59,6 @@ class VariationalDropout(lasagne.layers.Layer):
             self.nonlinearity = lambda x: x
         else:
             self.nonlinearity = nonlinearity
-
-    def get_vd_params(self):
-        """
-        returns parameters, if allowed
-        """
-        if self.adaptive != None:
-            return self.alpha
 
 class WangGaussianDropout(lasagne.layers.Layer):
     """
