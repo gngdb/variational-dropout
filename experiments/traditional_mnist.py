@@ -17,8 +17,7 @@ def main(output_dir, verbose=False):
     save_location = os.path.join(output_directory, output_file)
     n = 1
     while os.path.isfile(save_location):
-        save_location = os.path.join(output_directory, output_file)+\
-                ".{0}".format(n)
+        save_location = os.path.join(output_dir, output_file)+".{0}".format(n)
         n += 1
     # iterate from 100 to 1300 hidden units with 6 points
     # (explicit linspace)

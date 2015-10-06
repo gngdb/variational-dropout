@@ -58,3 +58,7 @@ target/
 
 # ignore all notebooks
 notebooks/
+
+# ignore intermediate data files
+experiments/t10k*
+experiments/train*
