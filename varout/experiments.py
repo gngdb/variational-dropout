@@ -91,7 +91,15 @@ def earlystopping(loop, delta=0.01, max_N=1000, verbose=False):
     Stops the expriment once the loss stops improving by delta per epoch.
     With a max_N of epochs to avoid infinite experiments.
     """
-    
+    prev_loss = 100
+    N = 0
+    while loss_diff > delta and N < max_N:
+        # run one epoch
+        loop.run(1, make_holomap=False)
+        N += 1
+        current_loss = loop.results("train Loss")[-1]
+        loss_diff = current_loss - prev_loss
+        prev_loss = current_loss
     return loop
 
 def load_data():
@@ -112,5 +120,3 @@ def load_data():
                 y_valid=dataset[3],
                 X_test=dataset[4].reshape(-1, 784),
                 y_test=dataset[5])
-
-
