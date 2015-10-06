@@ -102,7 +102,7 @@ class WangGaussianDropout(lasagne.layers.Layer):
         else:
             # sample from the Gaussian that dropout would produce:
             mu_z = input
-            sigma_z = T.sqrt(self.alpha*T.pow(input,2))
+            sigma_z = T.sqrt(T.abs_(self.alpha)*T.pow(input,2))
             randn = _srng.normal(input.shape, avg=1.0, std=1.)
             return self.nonlinearity(mu_z + sigma_z*randn)
 
@@ -140,7 +140,8 @@ class SrivastavaGaussianDropout(lasagne.layers.Layer):
             return input
         else:
             return input + \
-                input*self.alpha*_srng.normal(input.shape, avg=0.0, std=1.)
+                input*T.abs_(self.alpha)*_srng.normal(input.shape, 
+                                                      avg=0.0, std=1.)
 
 class VariationalDropoutA(VariationalDropout, SrivastavaGaussianDropout):
     """
