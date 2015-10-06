@@ -15,12 +15,9 @@ def priorKL(output_layer):
         * Theano expression for the KL divergence on the priors:
         - D_{KL}( q_{\phi}(w) || p(w) )
     """
-    # get all the variational dropout layers
-    layers = lasagne.layers.get_all_layers(output_layer)
-    vardroplayers = [l for l in layers if isinstance(l, VariationalDropout)]
-
     # gather up all the alphas
-    alphas = [p for l in vardroplayers for p in l.get_params()]
+    params = lasagne.layers.get_all_params(output_layer)
+    alphas = [p for p in params if p.name == "alpha"]
 
     # I hope all these decimal places are important
     c1 = 1.161451241083230
