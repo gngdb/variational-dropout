@@ -17,7 +17,7 @@ def priorKL(output_layer):
     """
     # gather up all the alphas
     params = lasagne.layers.get_all_params(output_layer)
-    alphas = [p for p in params if p.name == "alpha"]
+    alphas = [T.abs_(p) for p in params if p.name == "alpha"]
 
     # I hope all these decimal places are important
     c1 = 1.161451241083230
