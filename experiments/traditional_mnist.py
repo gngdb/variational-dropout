@@ -35,7 +35,9 @@ def main(output_dir, verbose=False):
         results[n_hidden] = varout.experiments.earlystopping(loop, 
                 verbose=verbose)
     # save the results
-    with gzip.open("save_location", "wb") as f:
+    if verbose:
+        print "saving to {0}".format(save_location)
+    with gzip.open(save_location, "wb") as f:
         pickle.dump(results, f)
 
 if __name__ == "__main__":
