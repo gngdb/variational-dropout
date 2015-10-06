@@ -13,6 +13,13 @@ output_file = "traditional.pkl.gz"
 def main(output_dir, verbose=False):
     # load the data (MNIST)
     dataset=varout.experiments.load_data()
+    # check if there's already a results file
+    save_location = os.path.join(output_directory, output_file)
+    n = 1
+    while os.path.isfile(save_location):
+        save_location = os.path.join(output_directory, output_file)+\
+                ".{0}".format(n)
+        n += 1
     # iterate from 100 to 1300 hidden units with 6 points
     # (explicit linspace)
     results = {}
@@ -29,13 +36,6 @@ def main(output_dir, verbose=False):
         results[n_hidden] = varout.experiments.earlystopping(loop, 
                 verbose=verbose)
     # save the results
-    # check if there's already a results file
-    save_location = os.path.join(output_directory, output_file)
-    n = 1
-    while os.path.isfile(save_location):
-        save_location = os.path.join(output_directory, output_file)+\
-                "{0}".format(n)
-        n += 1
     with gzip.open("save_location", "wb") as f:
         pickle.dump(results, f)
 
