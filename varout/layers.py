@@ -30,26 +30,26 @@ class VariationalDropout(lasagne.layers.Layer):
         # init based on adaptive options:
         if self.adaptive == None:
             # initialise scalar param, but don't register it
-            self.alpha = theano.shared(
-                value=np.array(np.sqrt(p/(1.-p))).astype(theano.config.floatX),
-                name='alpha'
+            self.logalpha = theano.shared(
+                value=np.array(np.log(np.sqrt(p/(1.-p)))).astype(theano.config.floatX),
+                name='logalpha'
                 )           
         elif self.adaptive == "layerwise":
             # initialise scalar param, allow updates
-            self.alpha = theano.shared(
-                value=np.array(np.sqrt(p/(1.-p))).astype(theano.config.floatX),
-                name='alpha'
+            self.logalpha = theano.shared(
+                value=np.array(np.log(np.sqrt(p/(1.-p)))).astype(theano.config.floatX),
+                name='logalpha'
                 )
-            self.add_param(self.alpha, ())
+            self.add_param(self.logalpha, ())
         elif self.adaptive == "elementwise":
             # initialise param for each activation passed
-            self.alpha = theano.shared(
+            self.logalpha = theano.shared(
                 value=np.array(
-                    np.ones(self.input_shape[1])*np.sqrt(p/(1.-p))
+                    np.ones(self.input_shape[1])*np.log(np.sqrt(p/(1.-p)))
                     ).astype(theano.config.floatX),
-                name='alpha'
+                name='logalpha'
                 )           
-            self.add_param(self.alpha, (self.input_shape[1]))
+            self.add_param(self.logalpha, (self.input_shape[1]))
         elif self.adaptive == "weightwise":
             # not implemented yet
             raise NotImplementedError("Not implemented yet, will have to "
@@ -78,9 +78,9 @@ class WangGaussianDropout(lasagne.layers.Layer):
     """
     def __init__(self, incoming, p=0.5, nonlinearity=None, **kwargs):
         lasagne.layers.Layer.__init__(self, incoming, **kwargs)
-        self.alpha = theano.shared(
-                value=np.array(np.sqrt(p/(1.-p))).astype(theano.config.floatX),
-                name='alpha'
+        self.logalpha = theano.shared(
+                value=np.array(np.log(np.sqrt(p/(1.-p)))).astype(theano.config.floatX),
+                name='logalpha'
                 )
         # if we get no nonlinearity, just put a non-function there
         if nonlinearity == None:
@@ -97,12 +97,13 @@ class WangGaussianDropout(lasagne.layers.Layer):
         deterministic : bool
         If true noise is disabled, see notes
         """
-        if deterministic or self.alpha.get_value() == 0:
+        if deterministic or self.logalpha.get_value() <= -20:
             return self.nonlinearity(input)
         else:
             # sample from the Gaussian that dropout would produce:
+            self.alpha = T.exp(self.logalpha)
             mu_z = input
-            sigma_z = T.sqrt(T.abs_(self.alpha)*T.pow(input,2))
+            sigma_z = T.sqrt(self.alpha*T.pow(input,2))
             randn = _srng.normal(input.shape, avg=1.0, std=1.)
             return self.nonlinearity(mu_z + sigma_z*randn)
 
@@ -122,9 +123,9 @@ class SrivastavaGaussianDropout(lasagne.layers.Layer):
     """
     def __init__(self, incoming, p=0.5, **kwargs):
         super(SrivastavaGaussianDropout, self).__init__(incoming, **kwargs)
-        self.alpha = theano.shared(
-                value=np.array(np.sqrt(p/(1.-p))).astype(theano.config.floatX),
-                name='alpha'
+        self.logalpha = theano.shared(
+                value=np.array(np.log(np.sqrt(p/(1.-p)))).astype(theano.config.floatX),
+                name='logalpha'
                 )
 
     def get_output_for(self, input, deterministic=False, **kwargs):
@@ -136,11 +137,12 @@ class SrivastavaGaussianDropout(lasagne.layers.Layer):
         deterministic : bool
         If true noise is disabled, see notes
         """
-        if deterministic or self.alpha.get_value() == 0:
+        if deterministic or self.logalpha.get_value() <= -20:
             return input
         else:
+            self.alpha = T.exp(self.logalpha)
             return input + \
-                input*T.abs_(self.alpha)*_srng.normal(input.shape, 
+                input*self.alpha*_srng.normal(input.shape, 
                                                       avg=0.0, std=1.)
 
 class VariationalDropoutA(VariationalDropout, SrivastavaGaussianDropout):
