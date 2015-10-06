@@ -14,7 +14,7 @@ def main(output_dir, verbose=False):
     # load the data (MNIST)
     dataset=varout.experiments.load_data()
     # check if there's already a results file
-    save_location = os.path.join(output_directory, output_file)
+    save_location = os.path.join(output_dir, output_file)
     n = 1
     while os.path.isfile(save_location):
         save_location = os.path.join(output_dir, output_file)+".{0}".format(n)
