@@ -15,9 +15,13 @@ import holonets
 import lasagne.layers
 import lasagne.nonlinearities
 import lasagne.updates
+import theano
+import theano
+import theano.tensor as T
 import urllib2
 import imp
 import itertools
+import argparse
 from collections import OrderedDict
 
 def wangDropoutArchitecture(batch_size=1000, input_dim=784, output_dim=10,
@@ -38,7 +42,7 @@ def wangDropoutArchitecture(batch_size=1000, input_dim=784, output_dim=10,
     return l_out
 
 def srivastavaDropoutArchitecture(batch_size=1000, input_dim=784, output_dim=10,
-                            DropoutLayer=layers.WangGaussianDropout,
+                            DropoutLayer=layers.SrivastavaGaussianDropout,
                             n_hidden=100):
     l_in = lasagne.layers.InputLayer((batch_size, input_dim))
     l_drop_in = DropoutLayer(l_in, p=0.2)
@@ -52,17 +56,18 @@ def srivastavaDropoutArchitecture(batch_size=1000, input_dim=784, output_dim=10,
             nonlinearity=lasagne.nonlinearities.softmax)
     return l_out
 
-def make_experiment(l_out, dataset, 
+def make_experiment(l_out, dataset, batch_size=1000, 
+        N_train=50000, N_valid=10000, N_test=10000, 
         loss_function=lasagne.objectives.categorical_crossentropy,
         extra_loss=0.0, limit_alpha=False):
     """
     Build a loop for training a model, evaluating loss on training, validation 
     and test.
     """
-    expressions = holonets.monitor.Expressions(l_out, dataset, batch_size, 
-            N_train=50000, N_valid=10000, N_test=10000,
-            update_rule=lasagne.updates.adam, loss_function=loss_function, 
-            loss_aggregate=T.mean, extra_loss=extra_loss, learning_rate=0.001)
+    expressions = holonets.monitor.Expressions(l_out, dataset, 
+            batch_size=batch_size, update_rule=lasagne.updates.adam, 
+            loss_function=loss_function, loss_aggregate=T.mean, 
+            extra_loss=extra_loss, learning_rate=0.001)
     # only add channels for loss and accuracy
     for deterministic,dataset in itertools.product([True, False, False],
                                                    ["train", "valid", False]):
@@ -86,21 +91,23 @@ def make_experiment(l_out, dataset,
     loop = holonets.run.EpochLoop(train, dimensions=train.dimensions)
     return loop
 
-def earlystopping(loop, delta=0.01, max_N=1000, verbose=False):
+def earlystopping(loop, delta=0.001, max_N=1000, verbose=False):
     """
     Stops the expriment once the loss stops improving by delta per epoch.
     With a max_N of epochs to avoid infinite experiments.
     """
-    prev_loss = 100
+    prev_loss, loss_diff = 100, 0.9
     N = 0
     while loss_diff > delta and N < max_N:
         # run one epoch
-        loop.run(1, make_holomap=False)
+        results = loop.run(1)
         N += 1
-        current_loss = loop.results("train Loss")[-1]
-        loss_diff = current_loss - prev_loss
+        current_loss = loop.results["train Loss"][-1][1]
+        loss_diff = (prev_loss-current_loss)/prev_loss
+        if verbose:
+            print N, loss_diff
         prev_loss = current_loss
-    return loop
+    return results
 
 def load_data():
     """
@@ -110,7 +117,7 @@ def load_data():
         * test: separate 10000
     """
     # is this the laziest way to load mnist?
-    mnist = imp.new_module()
+    mnist = imp.new_module('mnist')
     exec urllib2.urlopen("https://raw.githubusercontent.com/Lasagne/Lasagne"
             "/master/examples/mnist.py").read() in mnist.__dict__
     dataset = mnist.load_dataset()
@@ -120,3 +127,11 @@ def load_data():
                 y_valid=dataset[3],
                 X_test=dataset[4].reshape(-1, 784),
                 y_test=dataset[5])
+
+def get_argparser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("output_directory", help="directory to save pickle "
+            "files of results")
+    parser.add_argument("-v", action='store_true', 
+            help="make the experiment more verbose")
+    return parser
