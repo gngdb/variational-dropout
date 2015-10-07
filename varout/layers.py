@@ -282,8 +282,8 @@ class SeparateWeightSamples(SingleWeightSample):
                           self.W.shape[0],
                           self.W.shape[1]), avg=0.0, std=1.0)*self.gamma
         # then just extract from each independent weight matrix
-        activation = T.dot(input, self.W_noised)[T.arange(self.input_shape[0]), 
-                                                 T.arange(self.input_shape[0])]
+        activation = theano.scan(lambda i,w: T.dot(i,w), 
+                sequences=[input, self.W_noised])
         if self.b is not None:
             activation = activation + self.b.dimshuffle('x', 0)
         return self.nonlinearity(activation)
