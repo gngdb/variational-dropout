@@ -102,7 +102,7 @@ def earlystopping(loop, delta=0.001, max_N=1000, verbose=False):
         # run one epoch
         results = loop.run(1)
         N += 1
-        current_loss = loop.results["train Loss"][-1][1]
+        current_loss = loop.results["valid Loss"][-1][1]
         loss_diff = (prev_loss-current_loss)/prev_loss
         if verbose:
             print N, loss_diff
