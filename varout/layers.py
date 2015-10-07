@@ -78,7 +78,7 @@ class VariationalDropout(lasagne.layers.Layer):
                     ).astype(theano.config.floatX),
                 name='logitalpha'
                 )           
-            self.add_param(self.logitalpha, (self.input_shape[1]))
+            self.add_param(self.logitalpha, (self.input_shape[1],))
         elif self.adaptive == "weightwise":
             # not implemented yet
             raise NotImplementedError("Not implemented yet, will have to "
