@@ -67,7 +67,7 @@ def make_experiment(l_out, dataset, batch_size=1000,
     expressions = holonets.monitor.Expressions(l_out, dataset, 
             batch_size=batch_size, update_rule=lasagne.updates.adam, 
             loss_function=loss_function, loss_aggregate=T.mean, 
-            extra_loss=extra_loss, learning_rate=0.001)
+            extra_loss=extra_loss, learning_rate=0.001, momentum=0.9)
     # only add channels for loss and accuracy
     for deterministic,dataset in itertools.product([True, False, False],
                                                    ["train", "valid", False]):
