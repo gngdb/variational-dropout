@@ -227,11 +227,15 @@ class SingleWeightSample(lasagne.layers.DenseLayer):
     def __init__(self, incoming, num_units, p=0.5, **kwargs):
         super(SingleWeightSample, self).__init__(incoming, num_units, **kwargs)
         # then initialise the noise terms for each weight
-        self.epsilon = theano.shared(
-                value=np.array(np.sqrt((1./num_units)*p/(1.-p))\
-                        .astype(theano.config.floatX)),
-                name='epsilon'
+        p = _check_p(p)
+        self.logitalpha = theano.shared(
+                value=np.array(_logit(np.sqrt(p/(1.-p)))).astype(theano.config.floatX),
+                name='logitalpha'
                 )
+        self.alpha = T.nnet.sigmoid(self.logitalpha)
+        self.epsilon = np.sqrt(1./num_units)*self.alpha
+        self.gamma = T.sqrt(T.pow(self.epsilon,2)*self.W**2)
+
     def get_output_for(self, input, deterministic=False, **kwargs):
         """
         Parameters
@@ -245,9 +249,8 @@ class SingleWeightSample(lasagne.layers.DenseLayer):
             # if the input has more than two dimensions, flatten it into a
             # batch of feature vectors.
             input = input.flatten(2)
-
         self.W_noised = self.W + \
-            _srng.normal(self.W.shape, avg=0.0, std=1.0)*self.epsilon
+            _srng.normal(self.W.shape, avg=0.0, std=1.0)*self.gamma
         activation = T.dot(input, self.W_noised)
         if self.b is not None:
             activation = activation + self.b.dimshuffle('x', 0)
@@ -277,9 +280,10 @@ class SeparateWeightSamples(SingleWeightSample):
         self.W_noised = self.W + \
             _srng.normal((self.input_shape[0], 
                           self.W.shape[0],
-                          self.W.shape[1]), avg=0.0, std=1.0)*self.epsilon
+                          self.W.shape[1]), avg=0.0, std=1.0)*self.gamma
         # then just extract from each independent weight matrix
-        activation = T.dot(input, self.W_noised)[T.arange(self.num_units, self.num_units)]
+        activation = T.dot(input, self.W_noised)[T.arange(self.input_shape[0]), 
+                                                 T.arange(self.input_shape[0])]
         if self.b is not None:
             activation = activation + self.b.dimshuffle('x', 0)
         return self.nonlinearity(activation)
