@@ -127,11 +127,11 @@ class WangGaussianDropout(lasagne.layers.Layer):
         deterministic : bool
         If true noise is disabled, see notes
         """
-        if deterministic or self.logitalpha.get_value() <= -20:
+        self.alpha = T.nnet.sigmoid(self.logitalpha)
+        if deterministic or T.mean(self.alpha).eval() == 0:
             return self.nonlinearity(input)
         else:
             # sample from the Gaussian that dropout would produce:
-            self.alpha = T.exp(self.logitalpha)
             mu_z = input
             sigma_z = T.sqrt(T.pow(self.alpha,2)*T.pow(input,2))
             randn = _srng.normal(input.shape, avg=1.0, std=1.)
