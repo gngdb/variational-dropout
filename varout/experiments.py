@@ -41,6 +41,23 @@ def wangDropoutArchitecture(batch_size=1000, input_dim=784, output_dim=10,
             nonlinearity=lasagne.nonlinearities.softmax)
     return l_out
 
+def vardropBDropoutArchitecture(batch_size=1000, input_dim=784, output_dim=10,
+                            DropoutLayer=layers.VariationalDropoutB,
+                            n_hidden=100):
+    l_in = lasagne.layers.InputLayer((batch_size, input_dim))
+    l_drop_in = DropoutLayer(l_in, p=0.2, adaptive="elementwise")
+    l_hidden_1 = lasagne.layers.DenseLayer(l_drop_in, num_units=n_hidden, 
+            nonlinearity=lambda x: x)
+    l_drop_1 = DropoutLayer(l_hidden_1, p=0.5, 
+            nonlinearity=lasagne.nonlinearities.rectify, adaptive="elementwise")
+    l_hidden_2 = lasagne.layers.DenseLayer(l_drop_1, num_units=n_hidden,
+            nonlinearity=lambda x: x)
+    l_drop_2 = DropoutLayer(l_hidden_2, p=0.5, 
+            nonlinearity=lasagne.nonlinearities.rectify, adaptive="elementwise")
+    l_out = lasagne.layers.DenseLayer(l_drop_2, num_units=output_dim,
+            nonlinearity=lasagne.nonlinearities.softmax)
+    return l_out
+
 def srivastavaDropoutArchitecture(batch_size=1000, input_dim=784, output_dim=10,
                             DropoutLayer=layers.SrivastavaGaussianDropout,
                             n_hidden=100):
@@ -52,6 +69,21 @@ def srivastavaDropoutArchitecture(batch_size=1000, input_dim=784, output_dim=10,
     l_hidden_2 = lasagne.layers.DenseLayer(l_drop_1, num_units=n_hidden,
             nonlinearity=lasagne.nonlinearities.rectify)
     l_drop_2 = DropoutLayer(l_hidden_2, p=0.5)
+    l_out = lasagne.layers.DenseLayer(l_drop_2, num_units=output_dim,
+            nonlinearity=lasagne.nonlinearities.softmax)
+    return l_out
+
+def vardropADropoutArchitecture(batch_size=1000, input_dim=784, output_dim=10,
+                            DropoutLayer=layers.VariationalDropoutA,
+                            n_hidden=100):
+    l_in = lasagne.layers.InputLayer((batch_size, input_dim))
+    l_drop_in = DropoutLayer(l_in, p=0.2, adaptive="elementwise")
+    l_hidden_1 = lasagne.layers.DenseLayer(l_drop_in, num_units=n_hidden, 
+            nonlinearity=lasagne.nonlinearities.rectify)
+    l_drop_1 = DropoutLayer(l_hidden_1, p=0.5, adaptive="elementwise")
+    l_hidden_2 = lasagne.layers.DenseLayer(l_drop_1, num_units=n_hidden,
+            nonlinearity=lasagne.nonlinearities.rectify)
+    l_drop_2 = DropoutLayer(l_hidden_2, p=0.5, adaptive="elementwise")
     l_out = lasagne.layers.DenseLayer(l_drop_2, num_units=output_dim,
             nonlinearity=lasagne.nonlinearities.softmax)
     return l_out
