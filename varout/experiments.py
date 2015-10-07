@@ -67,7 +67,7 @@ def make_experiment(l_out, dataset, batch_size=1000,
     expressions = holonets.monitor.Expressions(l_out, dataset, 
             batch_size=batch_size, update_rule=lasagne.updates.adam, 
             loss_function=loss_function, loss_aggregate=T.mean, 
-            extra_loss=extra_loss, learning_rate=0.001, momentum=0.9)
+            extra_loss=extra_loss, learning_rate=0.001, momentum=0.1)
     # only add channels for loss and accuracy
     for deterministic,dataset in itertools.product([True, False, False],
                                                    ["train", "valid", False]):
@@ -98,7 +98,7 @@ def earlystopping(loop, delta=0.001, max_N=1000, verbose=False):
     """
     prev_loss, loss_diff = 100, 0.9
     N = 0
-    while loss_diff > delta and N < max_N:
+    while abs(loss_diff) > delta and N < max_N:
         # run one epoch
         results = loop.run(1)
         N += 1
