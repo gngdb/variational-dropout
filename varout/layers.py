@@ -4,9 +4,37 @@ import lasagne.layers
 import theano
 import theano.tensor as T
 import numpy as np
+import warnings
 
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 _srng = MRG_RandomStreams(42)
+
+def _logit(x):
+    """
+    Logit function in Theano. Useful for parameterizing alpha.
+    """
+    return np.log(x/(1. - x))
+
+def _check_p(p):
+    """
+    Thanks to our logit parameterisation we can't accept p of greater than or
+    equal to 0.5 (or we get inf logitalphas). So we'll just warn the user and
+    scale it down slightly.
+    """
+    if p == 0.5:
+        warnings.warn("Cannot set p to exactly 0.5, limits are: 0 < p < 0.5."
+                " Setting to 0.4999", RuntimeWarning)
+        return 0.4999
+    elif p > 0.5:
+        warnings.warn("Cannot set p to greater than 0.5, limits are: "
+                "0 < p < 0.5. Setting to 0.4999", RuntimeWarning)
+        return 0.4999
+    elif p <= 0.0:
+        warnings.warn("Cannot set p to less than or equal to 0.0, limits are: "
+                "0 < p < 0.5. Setting to 0.0001", RuntimeWarning)
+        return 0.0001
+    else:
+        return p
 
 class VariationalDropout(lasagne.layers.Layer):
     """
@@ -27,29 +55,30 @@ class VariationalDropout(lasagne.layers.Layer):
                  **kwargs):
         lasagne.layers.Layer.__init__(self, incoming, **kwargs)
         self.adaptive = adaptive
+        p = _check_p(p)
         # init based on adaptive options:
         if self.adaptive == None:
             # initialise scalar param, but don't register it
-            self.logalpha = theano.shared(
-                value=np.array(np.log(np.sqrt(p/(1.-p)))).astype(theano.config.floatX),
-                name='logalpha'
+            self.logitalpha = theano.shared(
+                value=np.array(_logit(np.sqrt(p/(1.-p)))).astype(theano.config.floatX),
+                name='logitalpha'
                 )           
         elif self.adaptive == "layerwise":
             # initialise scalar param, allow updates
-            self.logalpha = theano.shared(
-                value=np.array(np.log(np.sqrt(p/(1.-p)))).astype(theano.config.floatX),
-                name='logalpha'
+            self.logitalpha = theano.shared(
+                value=np.array(_logit(np.sqrt(p/(1.-p)))).astype(theano.config.floatX),
+                name='logitalpha'
                 )
-            self.add_param(self.logalpha, ())
+            self.add_param(self.logitalpha, ())
         elif self.adaptive == "elementwise":
             # initialise param for each activation passed
-            self.logalpha = theano.shared(
+            self.logitalpha = theano.shared(
                 value=np.array(
-                    np.ones(self.input_shape[1])*np.log(np.sqrt(p/(1.-p)))
+                    np.ones(self.input_shape[1])*_logit(np.sqrt(p/(1.-p)))
                     ).astype(theano.config.floatX),
-                name='logalpha'
+                name='logitalpha'
                 )           
-            self.add_param(self.logalpha, (self.input_shape[1]))
+            self.add_param(self.logitalpha, (self.input_shape[1]))
         elif self.adaptive == "weightwise":
             # not implemented yet
             raise NotImplementedError("Not implemented yet, will have to "
@@ -78,9 +107,10 @@ class WangGaussianDropout(lasagne.layers.Layer):
     """
     def __init__(self, incoming, p=0.5, nonlinearity=None, **kwargs):
         lasagne.layers.Layer.__init__(self, incoming, **kwargs)
-        self.logalpha = theano.shared(
-                value=np.array(np.log(np.sqrt(p/(1.-p)))).astype(theano.config.floatX),
-                name='logalpha'
+        p = _check_p(p)
+        self.logitalpha = theano.shared(
+                value=np.array(_logit(np.sqrt(p/(1.-p)))).astype(theano.config.floatX),
+                name='logitalpha'
                 )
         # if we get no nonlinearity, just put a non-function there
         if nonlinearity == None:
@@ -97,13 +127,13 @@ class WangGaussianDropout(lasagne.layers.Layer):
         deterministic : bool
         If true noise is disabled, see notes
         """
-        if deterministic or self.logalpha.get_value() <= -20:
+        self.alpha = T.nnet.sigmoid(self.logitalpha)
+        if deterministic or T.mean(self.alpha).eval() == 0:
             return self.nonlinearity(input)
         else:
             # sample from the Gaussian that dropout would produce:
-            self.alpha = T.exp(self.logalpha)
             mu_z = input
-            sigma_z = T.sqrt(self.alpha*T.pow(input,2))
+            sigma_z = T.sqrt(T.pow(self.alpha,2)*T.pow(input,2))
             randn = _srng.normal(input.shape, avg=1.0, std=1.)
             return self.nonlinearity(mu_z + sigma_z*randn)
 
@@ -123,9 +153,10 @@ class SrivastavaGaussianDropout(lasagne.layers.Layer):
     """
     def __init__(self, incoming, p=0.5, **kwargs):
         super(SrivastavaGaussianDropout, self).__init__(incoming, **kwargs)
-        self.logalpha = theano.shared(
-                value=np.array(np.log(np.sqrt(p/(1.-p)))).astype(theano.config.floatX),
-                name='logalpha'
+        p = _check_p(p)
+        self.logitalpha = theano.shared(
+                value=np.array(_logit(np.sqrt(p/(1.-p)))).astype(theano.config.floatX),
+                name='logitalpha'
                 )
 
     def get_output_for(self, input, deterministic=False, **kwargs):
@@ -137,10 +168,10 @@ class SrivastavaGaussianDropout(lasagne.layers.Layer):
         deterministic : bool
         If true noise is disabled, see notes
         """
-        if deterministic or self.logalpha.get_value() <= -20:
+        self.alpha = T.nnet.sigmoid(self.logitalpha)
+        if deterministic or T.mean(self.alpha).eval() == 0:
             return input
         else:
-            self.alpha = T.exp(self.logalpha)
             return input + \
                 input*self.alpha*_srng.normal(input.shape, 
                                                       avg=0.0, std=1.)
