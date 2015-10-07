@@ -218,3 +218,68 @@ class VariationalDropoutB(VariationalDropout, WangGaussianDropout):
         VariationalDropout.__init__(self, incoming, p=p, adaptive=adaptive, 
                 nonlinearity=nonlinearity, **kwargs)
 
+
+class SingleWeightSample(lasagne.layers.DenseLayer):
+    """
+    MC on the uncertainty of the weights by taking a single sample of the 
+    weight matrix and propagating forwards.
+    """
+    def __init__(self, incoming, num_units, p=0.5, **kwargs):
+        super(SingleWeightSample, self).__init__(incoming, num_units, **kwargs)
+        # then initialise the noise terms for each weight
+        self.epsilon = theano.shared(
+                value=np.array(np.sqrt((1./num_units)*p/(1.-p))\
+                        .astype(theano.config.floatX)),
+                name='epsilon'
+                )
+    def get_output_for(self, input, deterministic=False, **kwargs):
+        """
+        Parameters
+        ----------
+        input : tensor
+        output from the previous layer
+        deterministic : bool
+        If true noise is disabled, see notes
+        """
+        if input.ndim > 2:
+            # if the input has more than two dimensions, flatten it into a
+            # batch of feature vectors.
+            input = input.flatten(2)
+
+        self.W_noised = self.W + \
+            _srng.normal(self.W.shape, avg=0.0, std=1.0)*self.epsilon
+        activation = T.dot(input, self.W_noised)
+        if self.b is not None:
+            activation = activation + self.b.dimshuffle('x', 0)
+        return self.nonlinearity(activation)
+
+class SeparateWeightSamples(SingleWeightSample):
+    """
+    MC on the uncertainty of the weights by taking a separate sample of the
+    weight matrix for each example in the input matrix. Extremely slow.
+    """
+    def get_output_for(self, input, deterministic=False, **kwargs):
+        """
+        Parameters
+        ----------
+        input : tensor
+        output from the previous layer
+        deterministic : bool
+        If true noise is disabled, see notes
+        """
+        if input.ndim > 2:
+            # if the input has more than two dimensions, flatten it into a
+            # batch of feature vectors.
+            input = input.flatten(2)
+
+        # this is already going to be slow, might as well do lots of operations
+        # we're going to throw away to avoid dealing with theano's scan
+        self.W_noised = self.W + \
+            _srng.normal((self.input_shape[0], 
+                          self.W.shape[0],
+                          self.W.shape[1]), avg=0.0, std=1.0)*self.epsilon
+        # then just extract from each independent weight matrix
+        activation = T.dot(input, self.W_noised)[T.arange(self.num_units, self.num_units)]
+        if self.b is not None:
+            activation = activation + self.b.dimshuffle('x', 0)
+        return self.nonlinearity(activation)
