@@ -133,7 +133,7 @@ class WangGaussianDropout(lasagne.layers.Layer):
         else:
             # sample from the Gaussian that dropout would produce:
             mu_z = input
-            sigma_z = T.sqrt(T.pow(self.alpha,2)*T.pow(input,2))
+            sigma_z = self.alpha*input
             randn = _srng.normal(input.shape, avg=1.0, std=1.)
             return self.nonlinearity(mu_z + sigma_z*randn)
 
