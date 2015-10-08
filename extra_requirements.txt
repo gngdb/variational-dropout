@@ -1,0 +1,5 @@
+git+https://github.com/gngdb/holo-nets.git@master
+holoviews
+seaborn
+pandas
+scikit-learn
