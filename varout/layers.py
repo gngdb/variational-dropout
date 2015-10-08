@@ -234,7 +234,7 @@ class SingleWeightSample(lasagne.layers.DenseLayer):
                 )
         self.alpha = T.nnet.sigmoid(self.logitalpha)
         self.epsilon = np.sqrt(1./num_units)*self.alpha
-        self.gamma = T.sqrt(T.pow(self.epsilon,2)*self.W**2)
+        self.gamma = self.epsilon*self.W
 
     def get_output_for(self, input, deterministic=False, **kwargs):
         """
