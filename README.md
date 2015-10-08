@@ -55,6 +55,14 @@ possible to do this inside a container][kaixhin]) so any of the experiment
 scripts will take a very long time to run. They're not completely
 unworkable on a reasonable desktop though.
 
+Finally, in order to run scripts or use most of the notebooks you must
+install the package in develop mode. Open a terminal on the Jupyter server
+(or otherwise get a shell inside the container):
+
+```
+python setup.py develop
+```
+
 Replicating Results
 ===================
 
