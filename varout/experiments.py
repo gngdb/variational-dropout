@@ -20,7 +20,6 @@ import theano
 import theano.tensor as T
 import urllib2
 import imp
-import itertools
 import argparse
 from collections import OrderedDict
 
@@ -101,8 +100,8 @@ def make_experiment(l_out, dataset, batch_size=1000,
             loss_function=loss_function, loss_aggregate=T.mean, 
             extra_loss=extra_loss, learning_rate=0.001, momentum=0.1)
     # only add channels for loss and accuracy
-    for deterministic,dataset in itertools.product([True, False, False],
-                                                   ["train", "valid", False]):
+    for deterministic,dataset in zip([True, False, False],
+                                     ["train", "valid", "test"]):
         expressions.add_channel(**expressions.loss(dataset, deterministic))
         expressions.add_channel(**expressions.accuracy(dataset, deterministic))
     channels = expressions.build_channels()
