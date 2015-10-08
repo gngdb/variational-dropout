@@ -2,4 +2,5 @@ numpy>=1.9.0
 pytest>=2.6.4
 scipy>=0.14.0
 Theano>=0.7
+git+https://github.com/Theano/Theano.git@master
 git+https://github.com/Lasagne/Lasagne.git@master
