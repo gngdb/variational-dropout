@@ -3,6 +3,7 @@
 # Just traditional dropout on MNIST as with the others
 
 import varout.experiments
+import varout.objectives
 import varout.layers
 import lasagne.layers
 import pickle
@@ -30,7 +31,9 @@ def main(output_dir, verbose=False):
         l_out = varout.experiments.vardropBDropoutArchitecture(
                 n_hidden=n_hidden)
         # put it in an experiment
-        loop = varout.experiments.make_experiment(l_out, dataset)
+        loop = varout.experiments.make_experiment(l_out, dataset,
+                loss_function=varout.objectives.mclog_likelihood(N=50000),
+                extra_loss=-varout.objectives.priorKL(l_out))
         # run the experiment with early stopping until it converges
         results[n_hidden] = varout.experiments.earlystopping(loop, 
                 verbose=verbose)
