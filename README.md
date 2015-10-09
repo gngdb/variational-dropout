@@ -85,8 +85,8 @@ Once this is done, we'd like to look at the adaptive gradients in a bit
 more detail (there doesn't appear to have been space in the paper to
 discuss them more) and see what kind of properties they have.
 
-So far, the results comparing performance on the validation set (should be
-run on the __test set__, updated results are pending) are as follows:
+These are the current results on the test set, all we can really say is
+that it's better to have dropout than to not have it: 
 
 ![figure1a]
 
