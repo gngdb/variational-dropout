@@ -100,7 +100,7 @@ def make_experiment(l_out, dataset, batch_size=1000,
             loss_function=loss_function, loss_aggregate=T.mean, 
             extra_loss=extra_loss, learning_rate=0.001, momentum=0.1)
     # only add channels for loss and accuracy
-    for deterministic,dataset in zip([True, False, False],
+    for deterministic,dataset in zip([False, True, True],
                                      ["train", "valid", "test"]):
         expressions.add_channel(**expressions.loss(dataset, deterministic))
         expressions.add_channel(**expressions.accuracy(dataset, deterministic))
