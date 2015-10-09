@@ -95,7 +95,23 @@ that it's better to have dropout than to not have it:
 These graphs are produced in the notebook called "Opening Results" and the
 results are by running the scripts in the `experiments` directory.
 
-Table of results comparing the gradient variances pending.
+Unfortunately, haven't been able to reproduce the results for the empirical
+variances of the gradients either. It' likely there is some issue with this
+implementation at the moment. These are the results comparing empirical
+variances at the moment:
+
+ stochastic gradient estimator      | top       | bottom
+------------------------------------|-----------|-------
+local reparameterization 10 epochs  | 6.7e+04   | 1.2e+03
+local reparameterization 100 epochs | 5.6e+04   | 6.8e+02
+separate weight samples  10 epochs  | 1.7e+04   | 3e+02
+separate weight samples 70 epochs   | 3.3e+03   | 5.7e+01
+single weight sample 10 epochs      | 1.3e+04   | 2.2e+02
+single weight sample 100 epochs     | 3.3e+03   | 5.5e+01
+no dropout 10 epochs                | 7.8e+03   | 1.1e+02
+no dropout 100 epochs               | 1.08e-02 | 2.71e-04
+
+These are produces in the notebook "Comparing Empirical Variance".
 
 [arxiv]: http://arxiv.org/abs/1506.02557
 [kingma]: http://dpkingma.com/
