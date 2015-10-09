@@ -9,7 +9,7 @@ import pickle
 import gzip
 import os.path
 
-output_file = "variationalA.pkl.gz"
+output_file = "variationalA2.pkl.gz"
 
 def main(output_dir, verbose=False):
     # load the data (MNIST)
@@ -32,7 +32,7 @@ def main(output_dir, verbose=False):
         # put it in an experiment
         loop = varout.experiments.make_experiment(l_out, dataset,
                 loss_function=varout.objectives.mclog_likelihood(N=50000),
-                extra_loss=-varout.objectives.priorKL(l_out))
+                extra_loss=-(1./3)*varout.objectives.priorKL(l_out))
         # run the experiment with early stopping until it converges
         results[n_hidden] = varout.experiments.earlystopping(loop, 
                 verbose=verbose)
