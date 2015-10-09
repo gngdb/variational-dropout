@@ -13,6 +13,8 @@ import os
 def main(outdir, verbose=False):
     # get a list of all the results files
     results_files = glob.glob(os.path.join(outdir, "*"))
+    # make sure they are pkl.gz files:
+    results_files = [f for f in results_files if "pkl.gz" in f]
     bad_files = []
     for rfile in results_files:
         if verbose:
