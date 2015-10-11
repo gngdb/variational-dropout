@@ -481,17 +481,14 @@ and discussion.
 
 ## Table 1
 
-~ Begin Columns
-~ Column
-![table1]
-~
-~ Column
-![repltable1]
-~
-~ End Columns
 
-[table1]: images/table1.png
-[repltable1]: images/repltable1.png
+![table1]
+
+![repltable1]
+
+
+[table1]: images/table1.png { width=auto max-width=70% }
+[repltable1]: images/repltable1.png { width=auto max-width=50% }
 
 ~~ Notes
 Table 1 just verifies section 3.2 experimentally. They have simply trained
@@ -519,10 +516,10 @@ suggestions?
 ~
 ~ End Columns
 
-[figure1a]: images/figure1a.png { width=auto max-width=70% }
-[figure1b]: images/figure1b.png { width=auto max-width=70% }
-[replfigure1a]: images/figure1a.png { width=auto max-width=70% }
-[replfigure1b]: images/figure1b.png { width=auto max-width=70% }
+[figure1a]: images/figure1a.png { width=auto max-width=50% }
+[figure1b]: images/figure1b.png { width=auto max-width=50% }
+[replfigure1a]: images/replfigure1a.png { width=auto max-width=80% }
+[replfigure1b]: images/replfigure1b.png { width=auto max-width=80% }
 
 ## Extra Replication Results
 
