@@ -276,7 +276,7 @@ distribution that we're going to apply the reparameterization trick to.
 ~
 
 ~ Equation
-L_{\mathcal{D}}(\phi) = \sum_{(\mathbf{x}, \mathbf{y}) \in \mathcal{D}} \mathbb{E}_{q_{\phi}(\mathbf{w})} \left[ \log p(\mathbf{y}| \mathbf{x}, \mathbf{w} \right]
+L_{\mathcal{D}}(\phi) = \sum_{(\mathbf{x}, \mathbf{y}) \in \mathcal{D}} \mathbb{E}_{q_{\phi}(\mathbf{w})} \left[ \log p(\mathbf{y}| \mathbf{x}, \mathbf{w} ) \right]
 ~
 
 ~~ Notes
@@ -294,8 +294,9 @@ can).
 ## Stochastic Gradient Variational Bayes
 
 ~ Equation
-L_{\mathcal{D}) \simeq L_{\mathcal{D})^{SGVB}(\phi) = \frac{N}{M} \sum_{m=1}^{M} \log p(\mathbf{y}^{m} | \mathbf{x}^{m}, \mathbf{w}=f(\epsilon, \phi))
+L_{\mathcal{D}} \simeq L_{\mathcal{D}}^{SGVB}(\phi) = \frac{N}{M} \sum_{m=1}^{M} \log p(\mathbf{y}^{m} | \mathbf{x}^{m}, \mathbf{w}=f(\epsilon, \phi))
 ~
+
 
 ~~ Notes
 We want an objective we can differentiate wrt to both theta and phi. The
@@ -434,7 +435,7 @@ the paper means.
 ## Prior and Variational Objective
 
 ~ Equation
-p(\log ( |w_{i,j}|)) \prop c
+p(\log ( |w_{i,j}|)) \propto c
 ~
 
 ~ Equation
@@ -566,6 +567,6 @@ of models such as this, and integrating Bayesian models with neural
 networks is becoming a bit of trend.
 ~~
 
-# References 
+## Bibliography {-}
 
 [BIB]
