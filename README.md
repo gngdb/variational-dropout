@@ -124,5 +124,5 @@ These are produces in the notebook "Comparing Empirical Variance".
 [kaixhin]: https://github.com/Kaixhin/dockerfiles
 [sriva]: http://jmlr.org/papers/v15/srivastava14a.html
 [wang]: http://machinelearning.wustl.edu/mlpapers/papers/wang13a
-[figure1a]: images/figure1a.png
-[figure1b]: images/figure1b.png
+[figure1a]: presentation/images/figure1a.png
+[figure1b]: presentation/images/figure1b.png
