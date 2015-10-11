@@ -364,6 +364,8 @@ can sample from this in a reparameterized way as it's Gaussian.
 
 ~ End Vertical
 
+~ Begin Vertical
+
 # Variational Dropout
 
 ~~ Notes
@@ -459,6 +461,8 @@ accurate enough to work with, and now we've got everything we need to learn
 the parameters of our model and our variational distribution, which means
 being able to learn the dropout parameters as well.
 ~~
+
+~ End Vertical
 
 # Results and Replication
 
