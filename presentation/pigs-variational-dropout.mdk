@@ -267,7 +267,7 @@ distribution that we're going to apply the reparameterization trick to.
 ~~
 
 [plates]: images/plates.png { width=auto max-width=70% }
-[plates]: images/varplates.png { width=auto max-width=70% }
+[varplates]: images/varplates.png { width=auto max-width=70% }
 
 ## Variational Lower Bound
 
@@ -333,7 +333,7 @@ From @wang_fast_2013:
 
 ![wang_dropout]
 
-[wang_dropout]: images/wang_dropout.png { width=auto max-width=70% }
+[wang_dropout]: images/wang_dropout.png { width=auto max-width=50% }
 
 ~~ Notes
 Wang's paper in 2013 is all about projecting dropout forward: from hidden
@@ -396,7 +396,7 @@ unit; which are also possible, as they describe later.
 
 ![correlated]
 
-[correlated]: { width=auto max-width=70% }
+[correlated]: images/correlated.png { width=auto max-width=70% }
 
 ~~ Notes
 In this case, each row of the weight matrix sees the same noise on any
@@ -416,7 +416,7 @@ From the main dropout paper[@srivastava2014dropout]:
 
 ![srivastava]
 
-[dropout_diagram]: images/dropout_diagram.png { width=auto max-width=70% }
+[srivastava]: images/dropout_diagram.png { width=auto max-width=70% }
 
 ~~ Notes
 Srivastava's paper mainly deals with Bernoulli dropout, but there is a
@@ -505,7 +505,8 @@ suggestions?
 ~ Begin Columns
 
 ~ Column
-![figure1]
+![figure1a]
+![figure1b]
 ~
 ~ Column
 ![replfigure1a]
@@ -513,31 +514,10 @@ suggestions?
 ~
 ~ End Columns
 
-[figure1]: images/figure1.png { width=auto max-width=70% }
-[replfigure1a]: ../images/figure1a.png { width=auto max-width=70% }
-[replfigure1b]: ../images/figure1b.png { width=auto max-width=70% }
-
-~~ Notes
-These graphs were run with the original architecture used in Srivastava's
-paper, with two hidden layers, varying the number of hidden units.
-Optimisation was done with ADAM and momentum.
-
-In theirs you can see that the adaptive dropout is better, and manages to
-get down to 1% error, which is pretty good.
-
-In mine, all you can really conclude is that having dropout is better than
-not having it, and that the variational dropout is just as good as the
-Gaussian dropout. It does look a lot like the variational dropout A2 is the
-best, but I would warn you that these don't match the results on the
-validation set.
-
-The reasons my results don't match yet could be: I didn't tune any of the
-hyperparameters, such as momentum (just used 0.1) or batch size (just used
-1000), haven't explicitly randomised the seeds (but they seem to be
-stochastic anyway), variational dropout implementation could be wrong, or
-because I've chosen the wrong type of adaptivity to use (not specified in
-paper, chose elementwise).
-~~ 
+[figure1a]: images/figure1a.png { width=auto max-width=70% }
+[figure1b]: images/figure1b.png { width=auto max-width=70% }
+[replfigure1a]: images/figure1a.png { width=auto max-width=70% }
+[replfigure1b]: images/figure1b.png { width=auto max-width=70% }
 
 ## Extra Replication Results
 
