@@ -1,0 +1,589 @@
+[INCLUDE=presentation]
+Title         : Variational Dropout and the Local Reparameterization Trick
+Sub Title     : PIGS review of the paper by Kingma and Welling
+Author        : Gavin Gray
+Author Note   : Supervisors: Amos Storkey and D.K. Arvind
+Affiliation   : University of Edinburgh
+Email         : g.d.b.gray@sms.ed.ac.uk
+
+Reveal Theme  : solarized
+Beamer Theme  : singapore
+
+Bibliography  : pigs-variational-dropout-citations.bib
+Bib style     : plainnat
+
+[TITLE]
+
+<script>
+revealConfig.transition='linear';
+</script>
+
+# Contents 
+
+[TOC]
+
+# Context
+
+~~ Notes
+The ideas in this paper are a relatively simple extension of the ideas used
+in the Variational Autoencoder paper by the same authors, which itself uses
+an old technique which they call the reparameterization trick. But, why
+bother doing this at all? Why might we want a prior on the weights of our
+neural network? And why do it like this?
+
+To answer that we're going to have to look a little bit into the history of
+Bayesian neural networks, and the motivations. Along with that, we'll also
+have to cover the variational autoencoder, because everyone here might not
+be familiar with the "reparameterization trick".
+~~
+
+## Bayesian Neural Networks
+
+The Bayesian approach to neural networks[@neal_bayesian_1995]:
+
+* A prior distribution over model parameters.
+* Posterior inference over predictions.
+
+(The paper we're reviewing doesn't discuss posterior inference).
+
+~~ Notes
+Naive neural networks impplementation overfit massively without
+regularisation. So, most practical neural nets just tune the regularisation
+against a validation set during development until they get good results;
+and often employ early stopping so the network can't train for long enough
+to overfit.
+
+The first practical part of using a Bayesian prior on our weights is that
+we might be able to avoid overfitting; if we have a good prior on our
+weights. Another advantage to a Bayesian approach is that we'll be able to
+estimate our uncertainty over predictions, which can be useful in many
+tasks (e.g. regression).
+~~
+
+## Latent Variables
+
+How to deal with this latent variable problem?
+
+* Expectation Maximisation
+* Sampling [@neal_bayesian_1995]
+* Variational Inference [@hernandez-lobato_probabilistic_2015]
+
+~~ Notes
+Unfortunately, we can't then observe any of these random variables, and now
+we have one for every parameter in our neural network. This presents a
+difficult latent variable problem. If we open up our ML textbook on latent
+variable problems we'll see these options for how to deal with the problem.
+
+Expectation maximisation is preferred in most simple latent variable
+problems. In neural networks this means trading away our stochastic
+gradient algorithms for closed form updates on the expectation and
+maximisation passes; if we could derive the updates. There aren't many
+papers that have attempted this, and I'm not that familiar with them so I
+won't say anything else.
+
+Sampling has had a little more success. Back in 1995 Radford Neal used HMC
+to train Bayesian neural networks, complete with a complex ARD prior. This
+worked well in the NIPS feature selection challenge. The only problem is
+this doesn't scale up, and neural networks are traditionally useful on
+massive datasets.
+
+Variational inference is the most recent of these methods, and with a
+relatively large amount of success. Alex Graves used it to train a Bayesian
+neural network on various small datasets in 2011. However, this was still
+more expensive than existing methods, without a huge gain in the potential
+to reduce overfitting. More recent papers have focused on the same problem,
+using similar methods that may be more efficient.
+
+So this paper wants to solve the same problem, but they want it to be
+incredibly cheap and scalable. Preferably just the same as a neural network
+with dropout.
+~~
+
+## Motivation
+
+To make this explicit, the motivations of this paper were:
+
+* To reduce variance on parameter prior estimates
+* To make Bayesian neural networks practical
+
+~~ Notes
+The first of these goals is tied to the second. Their aim here is to make
+it very cheap to apply a variational inference procedure over the weights
+in your network; and in order to do this they exploit the link between
+uncertainty in weights and noise on hidden units (from Wang). This lets
+them give a principled interpretation of dropout and parameterize the
+uncertainty in the weights in terms of dropout variables that are part of
+the variational distribution.
+
+Then, we get a neural network that shouldn't overfit, and that we can still
+use all of our stochastic gradient methods that we know and love. And, we
+even get estimates of uncertainty over our weights and predictions; pretty
+much for free.
+~~
+
+~ Begin Vertical
+
+## Variational Autoencoders
+
+~~ Notes
+So I've probably mentioned the reparameterization trick by now (probably by
+accident) and you might not have heard the term yet. This work draws
+heavily on the paper about Variational Autoencoders by the same authors. In
+it, they show how to make variatonal autoencoders practical by exploiting
+this trick. Unfortunately, to explain it I also have to explain variational
+autoencoders. So, I'm going to just repeat part of the talk I gave two
+weeks ago, which itself is based on the talk given by Aaron Courville at
+the Deep Learning Summer School this year.
+~~
+
+## Directed versus Undirected
+
+~ Begin Columns
+~ Column
+![rbm]
+~
+~ Column
+![vae]
+~
+~ End Columns
+
+~~ Notes
+Don't we already have generative neural networks? We can stack restricted
+Boltzmann machines. True, but that has to be trained by sampling and is
+inherently noisy. Also, an undirected model doesn't give you much control
+over exactly _what_ the latent variables encode.
+
+The difference is that we'd like a directed graphical model versus the
+undirected produced by an RBM, where we have layers of random variables
+all the way up. With a variational autoencoder, our random variables are
+just the data and the top representation, with the neural network producing
+the data through a transformation of the latent variables.
+
+The big difficulty here is how to train this model though, we have to deal
+with all of these latent variables, which has typically been a big problem.
+~~
+
+[rbm]: images/rbm.png { width=auto max-width=70% }
+[vae]: images/vae.png { width=auto max-width=70% }
+
+## Encoding and Decoding
+
+Use a parameterized variational distribution $q_{\phi}(z|x)$:
+
+~ Equation
+\mathcal{L}(\theta, \phi, x) = \langle \log p_{\theta}(x,z) - \log
+q_{\phi}(z | x) \rangle_{q_{\phi}(z|x)}
+~
+
+~~ Notes
+So we have a latent variable problem, and if we've ever opened a textbook
+we know that our options are: MCMC, expectation maximisation or variational
+methods. Sampling is very costly and difficult so we look at variational
+methods. But simple mean-field assumptions don't yield nice solutions.
+
+Well, what if we solve our problem with another neural network? We can
+define our variational distribution as a simple distribution, but
+parameterized with an _encoder network_. This is a little weird, because
+now we're doing parametric variational inference, which is different to the
+normal variational inference method.
+~~ 
+
+~ Slide
+
+@courvilledlss2015:
+
+![vae_coding]
+
+[vae_coding]: images/courville_vae.png { width=auto max-width=70% }
+~
+
+## The Reparameterization Trick
+
+Pick a simple form for the variational distribution:
+
+~ Equation
+q_{\phi} (z|x) = \mathcal{N} (z; \mu_{z}(x), \sigma(x))
+~
+
+Then parameterize $z$ by taking advantage of this:
+
+~ Equation
+z = \mu_{z}(x) + \sigma_{z}(x)\epsilon_{z}
+~
+
+~ Equation
+\epsilon_z \sim \mathcal{N}(0,1)
+~
+
+~~ Notes
+Unfortunately, these are going to be hard to train, unless we can employ
+backprop, and how can we apply backprop through a random variable? Well,
+it turns out that's not a problem. We can reparameterize our objective so
+that it is differentiable in terms of both the parameters of our decoding
+and encoding functions.
+
+In this case we just take advantage of the properties of the normal
+distribution, the same way everyone does when sampling normally distributed
+random variables on a computer. It's actually a very old and simple trick,
+and there are other names for it in other fields.
+~~
+
+~ Slide
+
+@courvilledlss2015:
+
+![courville_backprop]
+
+~
+
+[courville_backprop]: images/courville_backprop.png { width=auto max-width=70% }
+
+~ End Vertical
+
+
+# SGVB with a Weight Prior
+
+~ Begin Vertical
+
+## The Model
+
+~ Begin Columns
+~ Column
+![plates]
+~
+~ Column
+![varplates]
+~
+~ End Columns
+
+~~ Notes
+Always worth having some plate notation when describing a model. The
+difference between a variational autoencoder and this model is that the
+latent variable is outside the plate.
+
+Now, next to it we have the variational distribution that we want to use.
+We assume it has some parameters that, once we optimise them we'll have a
+posterior distribution over our hidden variables. It's this variational
+distribution that we're going to apply the reparameterization trick to.
+~~
+
+[plates]: images/plates.png { width=auto max-width=70% }
+
+## Variational Lower Bound
+
+~ Equation
+\mathcal(L)(\phi) = - D_{KL}(q_{\phi}(\mathbf{w})||p(\mathbf{w})) + L_{\mathcal{D}}(\phi)
+~
+
+~ Equation
+L_{\mathcal{D}}(\phi) = \sum_{(\mathbf{x}, \mathbf{y}) \in \mathcal{D}} \mathbb{E}_{q_{\phi}(\mathbf{w})} \left[ \log p(\mathbf{y}| \mathbf{x}, \mathbf{w} \right]
+~
+
+~~ Notes
+This is what we optimise these variational parameters, and the parameters
+of our model with respect to. Where theta are the parameters of our
+model and phi are the parameters of the variational distribution. I'm not
+going to cover how it's derived here.
+
+The expectation is obviously impractical to start with, because we'd have
+to integrate over all of our parameters. We're also going to assume that we
+can deal with the KL divergence term analytically (and it turns out that we
+can).
+~~
+
+## Stochastic Gradient Variational Bayes
+
+~ Equation
+L_{\mathcal{D}) \simeq L_{\mathcal{D})^{SGVB}(\phi) = \frac{N}{M} \sum_{m=1}^{M} \log p(\mathbf{y}^{m} | \mathbf{x}^{m}, \mathbf{w}=f(\epsilon, \phi))
+~
+
+~~ Notes
+We want an objective we can differentiate wrt to both theta and phi. The
+simplest one that is an unbiased estimator of the objective is to use Monte
+Carlo. Unfortunately, if we were able to just draw samples from w using our
+parameters how would we take derivatives wrt it's parameters? Well, we make
+sure that the noise being added is parameterised such that we can take
+derivatives wrt phi.
+~~
+
+## Variance Reduction
+
+![varderiv]
+
+[varderiv]: images/varderiv.png
+
+~~ Notes
+This variance derivation is a little painful, and it would be nice if we
+had some intermediate steps in an appendix. The result of it is that the 
+variance of our estimator is proportional to the covariance between the
+objective on different examples in our minibatch. If we only sample the
+noise term once for all examples in our minibatch this is probably going to
+be positive (especially in the final layer). And, it doesn't matter if we
+increase the minibatch size; we're still going to have this problem.
+
+So, we want to make sure that the covariance between these examples is
+zero. It'll be zero if they're independent samples. So, why not just sample
+a new weight matrix for each of the examples? That's too expensive. This is
+the part of the paper where the dropout influence arises.
+~~
+
+## Wang's Dropout
+
+From @wang_fast_2013:
+
+![wang_dropout]
+
+[wang_dropout]: images/wang_dropout.png { width=auto max-width=70% }
+
+~~ Notes
+Wang's paper in 2013 is all about projecting dropout forward: from hidden
+units to later hidden units mainly, but they also mention how we can
+interpret a uncertainty on the weights as noise on the weights and therefore
+noise on the hidden units. As all of this noise is Gaussian and the sum of
+Gaussian random variables is also Gaussian we can treat the noise on the
+units as a Gaussian random variable dependent on the weights.
+
+Then, we just need to reparameterize this distribution over the units and
+we can draw samples and backpropagate with impunity.
+
+It is probably worth explaining this with A, B and W on the board at this
+point, using the example in the paper.
+~~
+
+## Activation Distribution
+
+![actform]
+
+[actform]: images/actform.png { width=auto max-width=70% }
+
+~~ Notes
+So we end up with this form for the distribution over activations, and we
+can sample from this in a reparameterized way as it's Gaussian. 
+~~
+
+# Variational Dropout
+
+~~ Notes
+Now we're pretty much done, and the paper seems to have started running out
+of space because the rest seems a bit rushed (and leaves out some things we
+might like to see).
+
+The paper presents two different forms of dropout; and links each to two
+different forms of Gaussian dropout that are presented in two earlier
+papers. This has been problematic in my experiments because there are some
+ambiguities as to the differences between the two. I've already described
+one of these above, and that corresponds to the independent weight noise
+version.
+~~
+
+## Independent Weight Noise
+
+![indep]
+
+[indep]: images/indep.png { width=auto max-width=70% }
+
+~~ Notes
+This is essentially the Gaussian dropout described in Wang's paper, which
+applies a Gaussian noise to the activation prior to the nonlinearity in a
+network, with the noise being parameterized here by alpha. This only
+describes the case for a layer-wise alpha, and not one for each weight or
+unit; which are also possible, as they describe later.
+~~
+
+## Correlated Weight Noise
+
+![correlated]
+
+[correlated]: { width=auto max-width=70% }
+
+~~ Notes
+In this case, each row of the weight matrix sees the same noise on any
+given input example, which is a little difficult to reconcile with the
+example given in the local reparameterization section. And this notation
+they've given is strange, does this mean we just add noise to the input to
+a layer, like the first equation would suggest? And then is the
+reparameterization of uncertainty on the weights moving backwards now?
+
+Well, we know that this is supposed to correspond to the Gaussian noise
+added in Srivastava's paper, so what if we look at that?
+~~
+
+## Srivastava's Dropout
+
+From the main dropout paper[@srivastava2014dropout]:
+
+![srivastava]
+
+[dropout_diagram]: images/dropout_diagram.png { width=auto max-width=70% }
+
+~~ Notes
+Srivastava's paper mainly deals with Bernoulli dropout, but there is a
+small section reporting that slightly improved results are possible by
+adding Gaussian noise as well. It says that Gaussian noise was added to the
+activations, distributed as in the previous slide, using the Bernoulli
+variance. This is problematic, because activations can refer to before or
+after the nonlinearity; and if before this corresponds to the same thing as
+Wang's Gaussian dropout. In my implementation, I've assumed that we're
+dealing with _after_ the nonlinearity, so that the two types of dropout
+will at least be different, if not correct, and it's likely this is what
+the paper means.
+~~
+
+## Prior and Variational Objective
+
+~ Equation
+p(\log ( |w_{i,j}|)) \prop c
+~
+
+~ Equation
+- D_{KL} \left[ q_{\phi}(w_{i}) | p(w_{i}) \right] \approx \text{constant} + 0.5 \log (\alpha) + c_{1}\alpha + c_{2}\alpha^{2} + c_{3} \alpha^{3}
+~
+
+~~ Notes
+OK, we're almost there and ready to start learning the parameters of our
+model and variational distribution. We just have to deal with this annoying
+KL term that we said we didn't have to worry about before.
+
+It's important that this KL term be independent of the parameters of the
+network. I'm not sure why this is right now. 
+
+It turns out the prior distribution they derive is analogous to a uniform
+distribution over floating point numbers, and the KL divergence regularises
+the number of significant digits required to store the number.
+
+Anyway, they derive this polynomial approximation that's presumably
+accurate enough to work with, and now we've got everything we need to learn
+the parameters of our model and our variational distribution, which means
+being able to learn the dropout parameters as well.
+~~
+
+# Results and Replication
+
+~~ Notes
+The results reported are very short, just a table showing that the
+derivation about the variance still plays out the same in practice and a
+graph showing better performance than Bernoulli or Gaussian dropout on
+MNIST. They also show that it's much faster than drawing a separate weight
+matrix for each example, but I don't think anyone really doubted that.
+
+I've put their results next to the results from my attempt at replication,
+but I don't think my replication is valid yet. There are probably bugs in
+my implementation, or in my experiments. I've just included for comparison
+and discussion.
+~~
+
+## Table 1
+
+~ Begin Columns
+~ Column
+![table1]
+~
+~ Column
+![repltable1]
+~
+~ End Columns
+
+[table1]: images/table1.png
+[repltable1]: images/table1.png
+
+~~ Notes
+Table 1 just verifies section 3.2 experimentally. They have simply trained
+a network for either 10 or 100 epochs and then looked at the variance on
+the gradients with respect to any of the parameters over the entire
+training set.
+
+My implementation doesn't quite reproduce this, and it could be due to
+either: bugs in the variational dropout implementation, rescaling of the
+noise to match the local reparameterization could be wrong, or any other
+suggestions?
+~~
+
+## Figure 1
+
+~ Begin Columns
+
+~ Column
+![figure1]
+~
+~ Column
+![replfigure1a]
+![replfigure1b]
+~
+~ End Columns
+
+[figure1]: images/figure1.png { width=auto max-width=70% }
+[replfigure1a]: ../images/figure1a.png { width=auto max-width=70% }
+[replfigure1b]: ../images/figure1b.png { width=auto max-width=70% }
+
+~~ Notes
+These graphs were run with the original architecture used in Srivastava's
+paper, with two hidden layers, varying the number of hidden units.
+Optimisation was done with ADAM and momentum.
+
+In theirs you can see that the adaptive dropout is better, and manages to
+get down to 1% error, which is pretty good.
+
+In mine, all you can really conclude is that having dropout is better than
+not having it, and that the variational dropout is just as good as the
+Gaussian dropout. It does look a lot like the variational dropout A2 is the
+best, but I would warn you that these don't match the results on the
+validation set.
+
+The reasons my results don't match yet could be: I didn't tune any of the
+hyperparameters, such as momentum (just used 0.1) or batch size (just used
+1000), haven't explicitly randomised the seeds (but they seem to be
+stochastic anyway), variational dropout implementation could be wrong, or
+because I've chosen the wrong type of adaptivity to use (not specified in
+paper, chose elementwise).
+~~ 
+
+## Extra Replication Results
+
+![alpha_training]
+
+[alpha_training]: images/alpha_training.png { width=auto max-width=70% }
+
+~~ Notes
+Despite these problems, here is a graph of what we see happening to alpha
+over the training period. This matches what they say in passing, that the
+alphas used in the adaptive case are much lower than that applied in normal
+Gaussian dropout.
+
+Also, we see that the variance of the alphas in this layer increases, which
+means that some of the alphas must be higher, because the network doesn't
+really care about those activations. Graphing these for the input layer to
+visualise what the network has learnt about the importance of pixels.
+~~
+
+~ Slide
+
+![alpha_image]
+
+[alpha_image]: images/alpha_image.png { width=auto max-width=70% }
+
+~
+
+## Extensions
+
+Possible extensions:
+
+* Bayesian encoders and decoders
+* Alternative latent variable neural networks
+* Suggestions?
+
+~~ Notes
+The paper doesn't discuss possible extensions, but it seems like there must
+be quite a few. The most obvious is to tie these back into variational
+autoencoders and use the uncertainty estimates on the output of these to
+define the variance of your hidden representation in an autoencoder.
+
+This also means we can explore some horribly parameterised latent variable
+models involving neural networks that would previously have been very
+difficult to deal with, such as the ARD model. There are probably a variety
+of models such as this, and integrating Bayesian models with neural
+networks is becoming a bit of trend.
+~~
+
+# References 
+
+[BIB]
