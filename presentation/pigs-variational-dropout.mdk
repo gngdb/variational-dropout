@@ -240,10 +240,9 @@ and there are other names for it in other fields.
 
 ~ End Vertical
 
+~ Begin Vertical
 
 # SGVB with a Weight Prior
-
-~ Begin Vertical
 
 ## The Model
 
@@ -361,6 +360,8 @@ point, using the example in the paper.
 So we end up with this form for the distribution over activations, and we
 can sample from this in a reparameterized way as it's Gaussian. 
 ~~
+
+~ End Vertical
 
 # Variational Dropout
 
