@@ -103,7 +103,7 @@ with dropout.
 
 To make this explicit, the motivations of this paper were:
 
-* To reduce variance on parameter prior estimates
+* To reduce variance on SGVB estimators
 * To make Bayesian neural networks practical
 
 ~~ Notes
@@ -123,7 +123,7 @@ much for free.
 
 ~ Begin Vertical
 
-## Variational Autoencoders
+# Variational Autoencoders
 
 ~~ Notes
 So I've probably mentioned the reparameterization trick by now (probably by
@@ -272,7 +272,7 @@ distribution that we're going to apply the reparameterization trick to.
 ## Variational Lower Bound
 
 ~ Equation
-\mathcal(L)(\phi) = - D_{KL}(q_{\phi}(\mathbf{w})||p(\mathbf{w})) + L_{\mathcal{D}}(\phi)
+\mathcal{L}(\phi) = - D_{KL}(q_{\phi}(\mathbf{w})||p(\mathbf{w})) + L_{\mathcal{D}}(\phi)
 ~
 
 ~ Equation
@@ -516,10 +516,10 @@ suggestions?
 ~
 ~ End Columns
 
-[figure1a]: images/figure1a.png { width=auto max-width=50% }
-[figure1b]: images/figure1b.png { width=auto max-width=50% }
-[replfigure1a]: images/replfigure1a.png { width=auto max-width=80% }
-[replfigure1b]: images/replfigure1b.png { width=auto max-width=80% }
+[figure1a]: images/figure1a.png { width=300px }
+[figure1b]: images/figure1b.png { width=300px }
+[replfigure1a]: images/replfigure1a.png { width=300px }
+[replfigure1b]: images/replfigure1b.png { width=300px }
 
 ## Extra Replication Results
 
@@ -528,12 +528,7 @@ suggestions?
 [alpha_training]: images/alpha_training.png { width=auto max-width=70% }
 
 ~~ Notes
-Despite these problems, here is a graph of what we see happening to alpha
-over the training period. This matches what they say in passing, that the
-alphas used in the adaptive case are much lower than that applied in normal
-Gaussian dropout.
-
-Also, we see that the variance of the alphas in this layer increases, which
+We see that the variance of the alphas in this layer increases, which
 means that some of the alphas must be higher, because the network doesn't
 really care about those activations. Graphing these for the input layer to
 visualise what the network has learnt about the importance of pixels.
