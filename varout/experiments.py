@@ -16,7 +16,6 @@ import lasagne.layers
 import lasagne.nonlinearities
 import lasagne.updates
 import theano
-import theano
 import theano.tensor as T
 import urllib2
 import imp
