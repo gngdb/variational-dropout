@@ -90,7 +90,7 @@ def vardropADropoutArchitecture(batch_size=1000, input_dim=784, output_dim=10,
 def make_experiment(l_out, dataset, batch_size=1000, 
         N_train=50000, N_valid=10000, N_test=10000, 
         loss_function=lasagne.objectives.categorical_crossentropy,
-        extra_loss=0.0, limit_alpha=False):
+        extra_loss=0.0):
     """
     Build a loop for training a model, evaluating loss on training, validation 
     and test.
