@@ -105,16 +105,6 @@ def make_experiment(l_out, dataset, batch_size=1000,
         expressions.add_channel(**expressions.loss(dataset, deterministic))
         expressions.add_channel(**expressions.accuracy(dataset, deterministic))
     channels = expressions.build_channels()
-    if limit_alpha:
-        # then add channel to reset all alphas at 1.0
-        alphas = [p for p in lasagne.layers.get_all_params(l_out) 
-                if p.name == "alpha"]
-        alpha_ceiling = theano.function([], alphas, 
-                updates=OrderedDict([(a, T.min([a, 1.0])) for a in alphas]))
-        channels.append({'dataset': 'train',
-                         'eval': lambda x: alpha_ceiling(),
-                         'dimensions': ['Alpha']*len(alphas),
-                         'names': ['alpha {0}'.format(i) for i in range(len(alphas))]})
     train = holonets.train.Train(channels, 
             n_batches={'train': N_train//batch_size, 
                        'valid':N_valid//batch_size, 
