@@ -96,7 +96,7 @@ These graphs are produced in the notebook called "Opening Results" and the
 results are by running the scripts in the `experiments` directory.
 
 Unfortunately, haven't been able to reproduce the results for the empirical
-variances of the gradients either. It' likely there is some issue with this
+variances of the gradients either. It's likely there is some issue with this
 implementation at the moment. These are the results comparing empirical
 variances at the moment:
 
