@@ -89,7 +89,7 @@ class VariationalDropout(lasagne.layers.Layer):
         else:
             self.nonlinearity = nonlinearity
 
-class WangGaussianDropout(lasagne.layers.Layer):
+class WangGaussianDropout(lasagne.layers.MergeLayer):
     """
     Replication of the Gaussian dropout of Wang and Manning 2012.
     To use this right, similarly to the above, this has to be applied
@@ -106,19 +106,25 @@ class WangGaussianDropout(lasagne.layers.Layer):
     nonlinearity : a nonlinearity to apply after the noising process
     """
     def __init__(self, incoming, p=0.5, nonlinearity=None, **kwargs):
-        lasagne.layers.Layer.__init__(self, incoming, **kwargs)
+        incoming_input = lasagne.layers.get_all_layers(incoming)[-2] 
+        lasagne.layers.MergeLayer.__init__(self, [incoming, incoming_input], 
+                **kwargs)
+        # store p in logit space
         p = _check_p(p)
         self.logitalpha = theano.shared(
                 value=np.array(_logit(np.sqrt(p/(1.-p)))).astype(theano.config.floatX),
                 name='logitalpha'
                 )
+        # and store the parameters of the previous layer
+        self.W = incoming.theta
+        self.b = incoming.b
         # if we get no nonlinearity, just put a non-function there
         if nonlinearity == None:
             self.nonlinearity = lambda x: x
         else:
             self.nonlinearity = nonlinearity
 
-    def get_output_for(self, input, deterministic=False, **kwargs):
+    def get_output_for(self, inputs, deterministic=False, **kwargs):
         """
         Parameters
         ----------
@@ -129,12 +135,13 @@ class WangGaussianDropout(lasagne.layers.Layer):
         """
         self.alpha = T.nnet.sigmoid(self.logitalpha)
         if deterministic or T.mean(self.alpha).eval() == 0:
-            return self.nonlinearity(input)
+            return self.nonlinearity(inputs[0])
         else:
-            # sample from the Gaussian that dropout would produce:
-            mu_z = input
-            sigma_z = self.alpha*input
-            randn = _srng.normal(input.shape, avg=1.0, std=1.)
+            # sample from the Gaussian that dropout would produce
+            mu_z = inputs[0]
+            sigma_z = T.sqrt(T.dot(T.square(inputs[1]), 
+                                   self.alpha*T.square(self.theta)))
+            randn = _srng.normal(size=inputs[0].shape, avg=0.0, std=1.)
             return self.nonlinearity(mu_z + sigma_z*randn)
 
 class SrivastavaGaussianDropout(lasagne.layers.Layer):
