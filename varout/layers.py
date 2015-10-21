@@ -80,9 +80,13 @@ class VariationalDropout(lasagne.layers.Layer):
                 )           
             self.add_param(self.logitalpha, (self.input_shape[1],))
         elif self.adaptive == "weightwise":
-            # not implemented yet
-            raise NotImplementedError("Not implemented yet, will have to "
-                    "use DenseLayer inheritance.")
+            # this will only work in the case of dropout type B
+             self.logitalpha = theano.shared(
+                value=np.array(
+                    np.ones(incoming.W.shape.eval())*_logit(np.sqrt(p/(1.-p)))
+                    ).astype(theano.config.floatX),
+                name='logitalpha'
+                )                      
         # if we get no nonlinearity, just put a non-function there
         if nonlinearity == None:
             self.nonlinearity = lambda x: x
