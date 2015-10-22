@@ -54,6 +54,14 @@ class VariationalDropout(lasagne.layers.Layer):
     def __init__(self, incoming, p=0.5, adaptive=None, nonlinearity=None, 
                  **kwargs):
         lasagne.layers.Layer.__init__(self, incoming, **kwargs)
+        self.init_adaptive(adaptive, p=p)
+
+    def init_adaptive(self, adaptive, p):
+        """
+        Initialises adaptive parameters.
+        """
+        if not hasattr(self, 'input_shape'):
+            self.input_shape = self.input_shapes[0]
         self.adaptive = adaptive
         p = _check_p(p)
         # init based on adaptive options:
@@ -81,25 +89,26 @@ class VariationalDropout(lasagne.layers.Layer):
             self.add_param(self.logitalpha, (self.input_shape[1],))
         elif self.adaptive == "weightwise":
             # this will only work in the case of dropout type B
-             self.logitalpha = theano.shared(
+            thetashape = (self.input_shapes[1][1],self.input_shapes[0][1])
+            self.logitalpha = theano.shared(
                 value=np.array(
-                    np.ones(incoming.W.shape.eval())*_logit(np.sqrt(p/(1.-p)))
+                    np.ones(thetashape)*_logit(np.sqrt(p/(1.-p)))
                     ).astype(theano.config.floatX),
                 name='logitalpha'
                 )                      
-        # if we get no nonlinearity, just put a non-function there
-        if nonlinearity == None:
-            self.nonlinearity = lambda x: x
-        else:
-            self.nonlinearity = nonlinearity
+            self.add_param(self.logitalpha, thetashape)
+
 
 class WangGaussianDropout(lasagne.layers.MergeLayer):
     """
     Replication of the Gaussian dropout of Wang and Manning 2012.
-    To use this right, similarly to the above, this has to be applied
-    to the activations of the network _before the nonlinearity_. This means
-    that the prior layer must have _no nonlinearity_, and then you can 
-    either apply a nonlinearity in this layer or afterwards yourself.
+    This layer will only work after a dense layer, but can probably be extended
+    to work with convolutional layers. Internally, this pulls out the weights
+    from the previous dense layer and applies them again itself, throwing away 
+    the expression passed from the dense layer. This is necessary because we
+    need the expression before the nonlinearity is applied and because we need
+    to calculate the sigma. This idiosyncratic method was chosen because it 
+    keeps the dropout architecture descriptions easy to read.
 
     Uses some of the code and comments from the Lasagne GaussianNoiseLayer:
     Parameters
@@ -109,7 +118,7 @@ class WangGaussianDropout(lasagne.layers.MergeLayer):
     p : float or tensor scalar, effective dropout probability
     nonlinearity : a nonlinearity to apply after the noising process
     """
-    def __init__(self, incoming, p=0.5, nonlinearity=None, **kwargs):
+    def __init__(self, incoming, p=0.5, **kwargs):
         incoming_input = lasagne.layers.get_all_layers(incoming)[-2] 
         lasagne.layers.MergeLayer.__init__(self, [incoming, incoming_input], 
                 **kwargs)
@@ -120,13 +129,17 @@ class WangGaussianDropout(lasagne.layers.MergeLayer):
                 name='logitalpha'
                 )
         # and store the parameters of the previous layer
-        self.W = incoming.theta
+        self.num_units = incoming.num_units
+        self.theta = incoming.W
         self.b = incoming.b
-        # if we get no nonlinearity, just put a non-function there
-        if nonlinearity == None:
-            self.nonlinearity = lambda x: x
-        else:
-            self.nonlinearity = nonlinearity
+        self.nonlinearity = incoming.nonlinearity
+
+    def get_output_shape_for(self, input_shapes):
+        """
+        Output shape will always be equal the shape coming out of the dense
+        layer previous.
+        """
+        return (input_shapes[1][0], self.num_units)
 
     def get_output_for(self, inputs, deterministic=False, **kwargs):
         """
@@ -137,12 +150,16 @@ class WangGaussianDropout(lasagne.layers.MergeLayer):
         deterministic : bool
         If true noise is disabled, see notes
         """
+        # repeat check from DenseLayer
+        if inputs[1].ndim > 2:
+            # flatten if we have more than 2 dims
+            inputs[1].ndim = inputs[1].flatten(2)
         self.alpha = T.nnet.sigmoid(self.logitalpha)
+        mu_z = T.dot(inputs[1], self.theta) + self.b.dimshuffle('x', 0)
         if deterministic or T.mean(self.alpha).eval() == 0:
-            return self.nonlinearity(inputs[0])
+            return self.nonlinearity(mu_z)
         else:
             # sample from the Gaussian that dropout would produce
-            mu_z = inputs[0]
             sigma_z = T.sqrt(T.dot(T.square(inputs[1]), 
                                    self.alpha*T.square(self.theta)))
             randn = _srng.normal(size=inputs[0].shape, avg=0.0, std=1.)
@@ -208,7 +225,7 @@ class VariationalDropoutA(VariationalDropout, SrivastavaGaussianDropout):
         VariationalDropout.__init__(self, incoming, p=p, adaptive=adaptive, 
                 nonlinearity=nonlinearity, **kwargs)
 
-class VariationalDropoutB(VariationalDropout, WangGaussianDropout):
+class VariationalDropoutB(WangGaussianDropout, VariationalDropout):
     """
     Variational dropout layer, implementing independent weight noise. Adaptive
     version of Wang's Gaussian dropout.
@@ -224,11 +241,9 @@ class VariationalDropoutB(VariationalDropout, WangGaussianDropout):
             * "weightwise" - allow updates to a parameter for each weight (don't 
             think this is actually necessary to replicate)
     """
-    def __init__(self, incoming, p=0.5, adaptive=None, nonlinearity=None, 
-                 **kwargs):
-        VariationalDropout.__init__(self, incoming, p=p, adaptive=adaptive, 
-                nonlinearity=nonlinearity, **kwargs)
-
+    def __init__(self, incoming, p=0.5, adaptive=None, **kwargs):
+        WangGaussianDropout.__init__(self, incoming, p=p, **kwargs)
+        self.init_adaptive(adaptive, p=p)
 
 class SingleWeightSample(lasagne.layers.DenseLayer):
     """
