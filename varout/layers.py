@@ -259,8 +259,6 @@ class SingleWeightSample(lasagne.layers.DenseLayer):
                 name='logitalpha'
                 )
         self.alpha = T.nnet.sigmoid(self.logitalpha)
-        self.epsilon = np.sqrt(1./num_units)*self.alpha
-        self.gamma = self.epsilon*self.W
 
     def get_output_for(self, input, deterministic=False, **kwargs):
         """
@@ -275,8 +273,7 @@ class SingleWeightSample(lasagne.layers.DenseLayer):
             # if the input has more than two dimensions, flatten it into a
             # batch of feature vectors.
             input = input.flatten(2)
-        self.W_noised = self.W + \
-            _srng.normal(self.W.shape, avg=0.0, std=1.0)*self.gamma
+        self.W_noised = self.W*(1. + _srng.normal(self.W.shape, avg=0.0, std=1.0)*T.sqrt(self.alpha))
         activation = T.dot(input, self.W_noised)
         if self.b is not None:
             activation = activation + self.b.dimshuffle('x', 0)
