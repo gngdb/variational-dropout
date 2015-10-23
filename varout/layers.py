@@ -298,10 +298,9 @@ class SeparateWeightSamples(SingleWeightSample):
             # batch of feature vectors.
             input = input.flatten(2)
 
-        self.W_noised = self.W + \
-            _srng.normal((self.input_shape[0], 
-                          self.W.shape[0],
-                          self.W.shape[1]), avg=0.0, std=1.0)*self.gamma
+        self.W_noised = self.W*(1 + _srng.normal((self.input_shape[0], 
+                        self.W.shape[0],
+                        self.W.shape[1]), avg=0.0, std=1.0)*T.sqrt(self.alpha))
         # then just extract from each independent weight matrix
         activation,_ = theano.scan(lambda i,w: T.dot(i,w), 
                 sequences=[input, self.W_noised])

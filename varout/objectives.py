@@ -25,8 +25,8 @@ def priorKL(output_layer):
     c3 = 0.586299206427007
 
     # will get taken apart again in the autodiff
-    return sum([T.sum(0.5*T.log(alpha) + c1*alpha + c2*T.pow(alpha,2) 
-                                 + c3*T.pow(alpha,3)) for alpha in alphas])
+    return sum([0.5*T.sum(T.log(alpha)) + c1*T.sum(alpha) + c2*T.sum(T.pow(alpha,2))
+                                 + c3*T.sum(T.pow(alpha,3)) for alpha in alphas])
 
 def mclog_likelihood(N=None, 
         base_likelihood=lasagne.objectives.categorical_crossentropy):

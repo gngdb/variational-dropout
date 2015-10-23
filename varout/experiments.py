@@ -43,10 +43,10 @@ def vardropBDropoutArchitecture(batch_size=1000, input_dim=784, output_dim=10,
     l_in = lasagne.layers.InputLayer((batch_size, input_dim))
     l_hidden_1 = lasagne.layers.DenseLayer(l_in, num_units=n_hidden, 
             nonlinearity=lasagne.nonlinearities.rectify)
-    l_drop_1 = DropoutLayer(l_hidden_1, p=0.2, adaptive="elementwise")
+    l_drop_1 = DropoutLayer(l_hidden_1, p=0.2, adaptive="weightwise")
     l_hidden_2 = lasagne.layers.DenseLayer(l_drop_1, num_units=n_hidden,
             nonlinearity=lasagne.nonlinearities.rectify)
-    l_drop_2 = DropoutLayer(l_hidden_2, p=0.5, adaptive="elementwise")
+    l_drop_2 = DropoutLayer(l_hidden_2, p=0.5, adaptive="weightwise")
     l_out = lasagne.layers.DenseLayer(l_drop_2, num_units=output_dim,
             nonlinearity=lasagne.nonlinearities.softmax)
     l_drop_3 = DropoutLayer(l_out, p=0.5)
