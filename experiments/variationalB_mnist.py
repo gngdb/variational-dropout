@@ -32,8 +32,7 @@ def main(output_dir, verbose=False):
                 n_hidden=n_hidden)
         # put it in an experiment
         loop = varout.experiments.make_experiment(l_out, dataset,
-                loss_function=varout.objectives.mclog_likelihood(N=50000),
-                extra_loss=-varout.objectives.priorKL(l_out))
+                extra_loss=-varout.objectives.priorKL(l_out)/50000)
         # run the experiment with early stopping until it converges
         results[n_hidden] = varout.experiments.earlystopping(loop, 
                 verbose=verbose)
