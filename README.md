@@ -1,6 +1,6 @@
 
-__Status__: not able to replicate all of the results in the paper yet, see
-below.
+__Status__: can replicate the ordering of the variances, but the numbers 
+don't quite match yet.
 
 This is a replication of the pre-print paper [Variational Dropout and the
 Local Reparameterization Trick][arxiv] by [Diederik Kingma][kingma], 
@@ -85,8 +85,10 @@ Once this is done, we'd like to look at the adaptive gradients in a bit
 more detail (there doesn't appear to have been space in the paper to
 discuss them more) and see what kind of properties they have.
 
-These are the current results on the test set, all we can really say is
-that it's better to have dropout than to not have it: 
+The following graphs are attempting to reproduce Figure 1, and we can see a 
+similar progression for Variational Dropout A and A2, getting better 
+performance. In this case A has performed better than A2, which is not what
+we see in the paper.
 
 ![figure1a]
 
@@ -95,23 +97,19 @@ that it's better to have dropout than to not have it:
 These graphs are produced in the notebook called "Opening Results" and the
 results are by running the scripts in the `experiments` directory.
 
-Unfortunately, haven't been able to reproduce the results for the empirical
-variances of the gradients either. It's likely there is some issue with this
-implementation at the moment. These are the results comparing empirical
-variances at the moment:
+The following are the results reproduced for Table 1 in the paper. The 
+ordering of the variances is approximately correct, but the variances 
+_increase_ after training to 100 epochs, which is likely a bug. Also, the 
+difference between the estimators is not as great as in the paper:
 
- stochastic gradient estimator      | top       | bottom
-------------------------------------|-----------|-------
-local reparameterization 10 epochs  | 6.7e+04   | 1.2e+03
-local reparameterization 100 epochs | 5.6e+04   | 6.8e+02
-separate weight samples  10 epochs  | 1.7e+04   | 3e+02
-separate weight samples 70 epochs   | 3.3e+03   | 5.7e+01
-single weight sample 10 epochs      | 1.3e+04   | 2.2e+02
-single weight sample 100 epochs     | 3.3e+03   | 5.5e+01
-no dropout 10 epochs                | 7.8e+03   | 1.1e+02
-no dropout 100 epochs               | 1.08e-02 | 2.71e-04
+ stochastic gradient estimator      | top 10 | bottom 10 | top 100 | bottom 100 
+------------------------------------|--------|-----------|---------|------------
+local reparameterization            | 2.4e+04 | 6.1e+02 | 2.5e+05 | 3e+03
+separate weight samples             | 4.8e+04 | 1.2e+03 | 4.9e+05 | 8.2e+03
+single weight sample                | 5.8e+04 | 1.5e+03 | 4.7e+05 | 6.8e+03
+no dropout                          | 1.5e+04 | 5.5e+02 | 1.4e+05 | 2.7e+03
 
-These are produces in the notebook "Comparing Empirical Variance".
+These are produced in the notebook "Comparing Empirical Variance".
 
 [arxiv]: http://arxiv.org/abs/1506.02557
 [kingma]: http://dpkingma.com/
