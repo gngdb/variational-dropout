@@ -94,8 +94,8 @@ we see in the paper.
 
 ![figure1b]
 
-These graphs are produced in the notebook called "Opening Results" and the
-results are by running the scripts in the `experiments` directory.
+These graphs are produced in the notebook called [Opening Results][opening] 
+and the results are by running the scripts in the `experiments` directory.
 
 The following are the results reproduced for Table 1 in the paper. The 
 ordering of the variances is approximately correct, but the variances 
@@ -109,7 +109,14 @@ separate weight samples             | 4.8e+04 | 1.2e+03 | 4.9e+05 | 8.2e+03
 single weight sample                | 5.8e+04 | 1.5e+03 | 4.7e+05 | 6.8e+03
 no dropout                          | 1.5e+04 | 5.5e+02 | 1.4e+05 | 2.7e+03
 
-These are produced in the notebook "Comparing Empirical Variance".
+These are produced in the notebook [Comparing Empirical Variance][compare].
+
+Finally, there is the notebook [Investigating Adaptive Properties][invesigating], 
+which includes the following image showing the alpha parameters (noise standard
+deviations) over the MNIST dataset. It's nice to see that it learns to ignore
+the edges:
+
+![ignore]
 
 [arxiv]: http://arxiv.org/abs/1506.02557
 [kingma]: http://dpkingma.com/
@@ -124,3 +131,7 @@ These are produced in the notebook "Comparing Empirical Variance".
 [wang]: http://machinelearning.wustl.edu/mlpapers/papers/wang13a
 [figure1a]: presentation/images/replfigure1a.png
 [figure1b]: presentation/images/replfigure1b.png
+[ignore]: presentation/images/ignore.png
+[compare]: https://github.com/gngdb/variational-dropout/blob/master/notebooks/Comparing%20Empirical%20Variance.ipynb
+[opening]: https://github.com/gngdb/variational-dropout/blob/master/notebooks/Opening%20Results.ipynb
+[investigating]: https://github.com/gngdb/variational-dropout/blob/master/notebooks/Investigating%20Adaptive%20Properties.ipynb
