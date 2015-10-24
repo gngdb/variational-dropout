@@ -111,7 +111,7 @@ no dropout                          | 1.5e+04 | 5.5e+02 | 1.4e+05 | 2.7e+03
 
 These are produced in the notebook [Comparing Empirical Variance][compare].
 
-Finally, there is the notebook [Investigating Adaptive Properties][invesigating], 
+Finally, there is the notebook [Investigating Adaptive Properties][investigating], 
 which includes the following image showing the alpha parameters (noise standard
 deviations) over the MNIST dataset. It's nice to see that it learns to ignore
 the edges:
