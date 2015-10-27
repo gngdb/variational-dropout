@@ -11,7 +11,7 @@ _srng = MRG_RandomStreams(42)
 
 def _logit(x):
     """
-    Logit function in Theano. Useful for parameterizing alpha.
+    Logit function in Numpy. Useful for parameterizing alpha.
     """
     return np.log(x/(1. - x))
 
