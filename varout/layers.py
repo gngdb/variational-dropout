@@ -82,11 +82,11 @@ class VariationalDropout(lasagne.layers.Layer):
             # initialise param for each activation passed
             self.logitalpha = theano.shared(
                 value=np.array(
-                    np.ones(self.input_shape[1])*_logit(np.sqrt(p/(1.-p)))
+                    np.ones(self.input_shape[1:])*_logit(np.sqrt(p/(1.-p)))
                     ).astype(theano.config.floatX),
                 name='logitalpha'
                 )           
-            self.add_param(self.logitalpha, (self.input_shape[1],))
+            self.add_param(self.logitalpha, self.input_shape[1:])
         elif self.adaptive == "weightwise":
             # this will only work in the case of dropout type B
             thetashape = (self.input_shapes[1][1],self.input_shapes[0][1])
