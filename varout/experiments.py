@@ -107,14 +107,14 @@ def make_experiment(l_out, dataset, batch_size=1000,
     loop = holonets.run.EpochLoop(train, dimensions=train.dimensions)
     return loop
 
-def earlystopping(loop, delta=0.001, max_N=1000, verbose=False):
+def earlystopping(loop, delta=0.001, max_N=1000, verbose=False, lookback=1):
     """
     Stops the expriment once the loss stops improving by delta per epoch.
     With a max_N of epochs to avoid infinite experiments.
     """
     prev_loss, loss_diff = 100, 0.9
     N = 0
-    while abs(loss_diff) > delta and N < max_N:
+    while -loss_diff < delta and N < max_N:
         # run one epoch
         results = loop.run(1)
         N += 1
@@ -122,7 +122,8 @@ def earlystopping(loop, delta=0.001, max_N=1000, verbose=False):
         loss_diff = (prev_loss-current_loss)/prev_loss
         if verbose:
             print N, loss_diff
-        prev_loss = current_loss
+        prev_loss = loop.results["valid Loss"][-min([lookback,
+                                len(loop.results['valid Loss'])])][1]
     return results
 
 def load_data():

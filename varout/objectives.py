@@ -31,3 +31,13 @@ def priorKL(output_layer):
 def mclog_likelihood(N=None, 
         base_likelihood=lasagne.objectives.categorical_crossentropy):
     return lambda predictions, targets: N*base_likelihood(predictions, targets)
+
+class LowerBound(object):
+    def __init__(self, base_objective, output_layer, dataset_size=50000):
+        self.base_objective = base_objective
+        self.N = dataset_size
+        self.DKL = priorKL(output_layer)
+
+    def __call__(self, predictions, targets):
+        return T.mean(self.base_objective(predictions, targets)) +\
+               self.DKL/self.N
