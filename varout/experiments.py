@@ -82,6 +82,21 @@ def vardropADropoutArchitecture(batch_size=1000, input_dim=784, output_dim=10,
             nonlinearity=lasagne.nonlinearities.softmax)
     return l_out
 
+def sparsevardropDropoutArchitecture(batch_size=1000, input_dim=784, output_dim=10,
+                            DropoutLayer=layers.SparsityVariationalDropout,
+                            n_hidden=100):
+    l_in = lasagne.layers.InputLayer((batch_size, input_dim))
+    l_drop_in = DropoutLayer(l_in, p=0.2, adaptive="elementwise")
+    l_hidden_1 = lasagne.layers.DenseLayer(l_drop_in, num_units=n_hidden, 
+            nonlinearity=lasagne.nonlinearities.rectify)
+    l_drop_1 = DropoutLayer(l_hidden_1, p=0.5, adaptive="elementwise")
+    l_hidden_2 = lasagne.layers.DenseLayer(l_drop_1, num_units=n_hidden,
+            nonlinearity=lasagne.nonlinearities.rectify)
+    l_drop_2 = DropoutLayer(l_hidden_2, p=0.5, adaptive="elementwise")
+    l_out = lasagne.layers.DenseLayer(l_drop_2, num_units=output_dim,
+            nonlinearity=lasagne.nonlinearities.softmax)
+    return l_out
+
 def make_experiment(l_out, dataset, batch_size=1000, 
         N_train=50000, N_valid=10000, N_test=10000, 
         loss_function=lasagne.objectives.categorical_crossentropy,

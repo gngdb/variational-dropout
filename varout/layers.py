@@ -307,3 +307,37 @@ class SeparateWeightSamples(SingleWeightSample):
         if self.b is not None:
             activation = activation + self.b.dimshuffle('x', 0)
         return self.nonlinearity(activation)
+
+class SparsityVariationalDropout(VariationalDropout, SrivastavaGaussianDropout):
+    """
+    Layer implementing the sparse variational dropout described in:
+    https://arxiv.org/abs/1701.05369
+    Alpha unconstrained to positive infinity, so we store in log
+    space instead of logit space.
+    Inits:
+        * p - initialisation of the parameters sampled for the noise 
+    distribution.
+        * adaptive - one of:
+            * None - will not allow updates to the dropout rate
+            * "layerwise" - allow updates to a single parameter controlling the 
+            updates
+            * "elementwise" - allow updates to a parameter for each hidden layer
+            * "weightwise" - allow updates to a parameter for each weight (don't 
+            think this is actually necessary to replicate)
+    """
+    def __init__(self, incoming, p=0.5, adaptive=None, nonlinearity=None, 
+                 **kwargs):
+        VariationalDropout.__init__(self, incoming, p=p, adaptive=adaptive, 
+                nonlinearity=nonlinearity, **kwargs)
+        # forward pass depends on this name, but we are remapping it to be 
+        # log alpha
+        logalpha = T.log(T.nnet.sigmoid(self.logitalpha)).eval()
+        # remove the old parameter
+        del self.params[self.logitalpha]
+        del self.logitalpha
+        self.logalpha = theano.shared(
+                        value=logalpha,
+                        name='logalpha')
+        self.logitalpha = self.logalpha
+        if self.adaptive is not None:
+            self.add_param(self.logalpha, logalpha.shape)
