@@ -310,7 +310,7 @@ class SeparateWeightSamples(SingleWeightSample):
 
 class SparsityVariationalDropout(VariationalDropout, SrivastavaGaussianDropout):
     """
-    Layer implementing the sparse variational dropout described in:
+    Approximation of the sparse variational dropout described in:
     https://arxiv.org/abs/1701.05369
     Alpha unconstrained to positive infinity, so we store in log
     space instead of logit space.
@@ -329,6 +329,10 @@ class SparsityVariationalDropout(VariationalDropout, SrivastavaGaussianDropout):
                  **kwargs):
         VariationalDropout.__init__(self, incoming, p=p, adaptive=adaptive, 
                 nonlinearity=nonlinearity, **kwargs)
+        import warnings
+        warnings.warn("This is not a true implementation of https://arxiv.org/abs/1701.05369, \n"
+                      "see the author's code for exact: https://github.com/ars-ashuha/variational-dropout-sparsifies-dnn\n"
+                      "or my tensorflow implementation: https://github.com/BayesWatch/tf-variational-dropout")
         # forward pass depends on this name, but we are remapping it to be 
         # log alpha
         logalpha = T.log(T.nnet.sigmoid(self.logitalpha)).eval()
