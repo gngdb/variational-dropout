@@ -1,4 +1,12 @@
 
+__FAQ__:
+
+* This is the old algorithm, what about the newer one that induces sparsity in a nice way? The author's published their own [Lasagne code for that][sparse] (I wouldn't recommend using the implementation for that hidden in this repo).
+* Lasagne, who still uses that? Here's a [tensorflow replication of the sparsifying variational dropout][tfsparse].
+
+[sparse]: https://github.com/ars-ashuha/variational-dropout-sparsifies-dnn
+[tfsparse]: https://github.com/BayesWatch/tf-variational-dropout
+
 __Status__: can replicate the ordering of the variances, but the numbers 
 don't quite match yet.
 
